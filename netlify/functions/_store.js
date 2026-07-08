@@ -1,24 +1,28 @@
 const { getStore } = require('@netlify/blobs');
 
 function store(name) {
-  return getStore(name);
+    return getStore({
+      name,
+      siteID: process.env.BLOBS_SITE_ID,
+      token: process.env.BLOBS_TOKEN,
+    });
 }
 
 function json(statusCode, data) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-    },
-    body: JSON.stringify(data)
-  };
+    return {
+      statusCode,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+      },
+      body: JSON.stringify(data)
+    };
 }
 
 function options() {
-  return json(200, {});
+    return json(200, {});
 }
 
 module.exports = { store, json, options };
