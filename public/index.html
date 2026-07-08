@@ -433,17 +433,26 @@ async function sendAI(text){
 
 /* ============ QUIZ LOGIC ============ */
 function startQuiz(){
-  state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null;
-  render();
+      state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true;
+      render();
+      api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lang: state.lang})}).then(d => {
+              state.quizData = (d && Array.isArray(d.questions) && d.questions.length) ? d.questions : QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
+              state.quizLoading = false;
+              render();
+      }).catch(() => {
+              state.quizData = QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
+              state.quizLoading = false;
+              render();
+      });
 }
 function answerQuiz(idx){
-  if (state.quizAnswered !== null) return;
-  state.quizAnswered = idx;
-  if (idx === QUIZ[state.quizIndex].correct) state.quizScore++;
-  render();
+      if (state.quizAnswered !== null || !state.quizData) return;
+      state.quizAnswered = idx;
+      if (idx === state.quizData[state.quizIndex].answerIndex) state.quizScore++;
+      render();
 }
 function nextQuiz(){
-  if (state.quizIndex + 1 >= QUIZ.length){
+  if (state.quizIndex + 1 >= state.quizData.length){
     const pts = state.quizScore * 15;
     submitQuizScore(pts);
     state.quizActive = false;
@@ -555,41 +564,47 @@ function renderChat(){
 }
 
 function renderQuiz(){
-  if (state.quizFinished){
-    return `
-    <div class="panel" style="text-align:center;">
-      <h2>${esc(t('quizResultTitle'))}</h2>
-      <div style="font-family:'Anton';font-size:52px;color:var(--teal);margin:14px 0;">${state.quizScore} / ${QUIZ.length}</div>
-      <p class="sub">+${state.quizScore*15} ${esc(t('scoreEarned'))}</p>
-      <button class="btn btn-primary" id="restartQuizBtn">${esc(t('quizStart'))}</button>
-    </div>`;
-  }
-  if (!state.quizActive){
-    return `
-    <div class="panel" style="text-align:center;">
-      <h2>${esc(t('quizTitle'))}</h2>
-      <p class="sub">${esc(t('quizSub'))}</p>
-      <button class="btn btn-primary" id="startQuizBtn">${esc(t('quizStart'))}</button>
-      ${!state.user ? `<p class="sub" style="margin-top:14px;">${esc(t('needAccount'))}</p>` : ''}
-    </div>`;
-  }
-  const q = QUIZ[state.quizIndex];
-  const data = q[state.lang];
-  const answered = state.quizAnswered;
-  return `
-  <div class="panel">
-    <div class="quiz-progress">${state.quizIndex+1} / ${QUIZ.length}</div>
-    <div class="quiz-q">${esc(data.q)}</div>
-    ${data.opts.map((opt, i) => {
-      let cls = 'quiz-opt';
-      if (answered !== null){
-        if (i === q.correct) cls += ' correct';
-        else if (i === answered) cls += ' wrong';
+      if (state.quizFinished){
+              return `
+                    <div class="panel" style="text-align:center;">
+                            <h2>${esc(t('quizResultTitle'))}</h2>
+                                    <div style="font-family:'Anton';font-size:52px;color:var(--teal);margin:14px 0;">${state.quizScore} / ${(state.quizData||QUIZ).length}</div>
+                                            <p class="sub">+${state.quizScore*15} ${esc(t('scoreEarned'))}</p>
+                                                    <button class="btn btn-primary" id="restartQuizBtn">${esc(t('quizStart'))}</button>
+                                                          </div>`;
       }
-      return `<button class="${cls}" data-idx="${i}" ${answered!==null?'disabled':''}>${esc(opt)}</button>`;
-    }).join('')}
-    ${answered !== null ? `<button class="btn btn-primary" id="nextQuizBtn" style="margin-top:10px;">${state.quizIndex+1>=QUIZ.length ? esc(t('quizFinish')) : esc(t('quizNext'))}</button>` : ''}
-  </div>`;
+      if (!state.quizActive){
+              return `
+                    <div class="panel" style="text-align:center;">
+                            <h2>${esc(t('quizTitle'))}</h2>
+                                    <p class="sub">${esc(t('quizSub'))}</p>
+                                            <button class="btn btn-primary" id="startQuizBtn">${esc(t('quizStart'))}</button>
+                                                    ${!state.user ? `<p class="sub" style="margin-top:14px;">${esc(t('needAccount'))}</p>` : ''}
+                                                          </div>`;
+      }
+      if (state.quizLoading || !state.quizData){
+              return `
+                    <div class="panel" style="text-align:center;">
+                            <h2>${esc(t('quizTitle'))}</h2>
+                                    <p class="sub">${state.lang==='fr' ? 'Generation du quiz en cours...' : 'Generating quiz...'}</p>
+                                          </div>`;
+      }
+      const data = state.quizData[state.quizIndex];
+      const answered = state.quizAnswered;
+      return `
+          <div class="panel">
+                <div class="quiz-progress">${state.quizIndex+1} / ${state.quizData.length}</div>
+                      <div class="quiz-q">${esc(data.question)}</div>
+                            ${data.choices.map((opt, i) => {
+                                      let cls = 'quiz-opt';
+                                      if (answered !== null){
+                                                  if (i === data.answerIndex) cls += ' correct';
+                                                  else if (i === answered) cls += ' wrong';
+                                      }
+                                      return `<button class="${cls}" data-idx="${i}" ${answered!==null?'disabled':''}>${esc(opt)}</button>`;
+                            }).join('')}
+                                  ${answered !== null ? `<button class="btn btn-primary" id="nextQuizBtn" style="margin-top:10px;">${state.quizIndex+1 >= state.quizData.length ? esc(t('quizFinish')) : esc(t('quizNext'))}</button>` : ''}
+                                      </div>`;
 }
 
 function renderGallery(){
