@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA6 HUB — La communauté GTA 6</title>
+<meta name="description" content="Application communautaire non-officielle pour les fans de GTA 6 : classement mondial, chat, quiz, galerie et assistant IA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0D18;
+    --bg-panel:#12162A;
+    --bg-panel-2:#191233;
+    --line:#2A2A46;
+    --text:#F2F0EA;
+    --text-dim:#9691B5;
+    --magenta:#FF2E93;
+    --teal:#00E5C7;
+    --orange:#FF6B35;
+    --yellow:#FFD23F;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{min-height:100vh;overflow-x:hidden;}
+  a{color:inherit;}
+
+  /* ---- background grid horizon signature ---- */
+  .horizon{
+    position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(255,46,147,0.18), transparent 60%),
+      radial-gradient(120% 60% at 50% 100%, rgba(0,229,199,0.12), transparent 55%),
+      var(--bg);
+  }
+  .horizon svg{position:absolute;bottom:-5%;left:50%;transform:translateX(-50%);width:140%;max-width:1600px;opacity:0.35;}
+  .horizon .sun{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:280px;height:280px;border-radius:50%;
+    background:linear-gradient(180deg,var(--yellow),var(--orange) 45%,var(--magenta));filter:blur(2px);opacity:0.18;}
+
+  #app{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 18px 100px;}
+
+  /* ---- topbar ---- */
+  header.top{display:flex;align-items:center;justify-content:space-between;padding:22px 0 14px;gap:12px;flex-wrap:wrap;}
+  .logo{display:flex;align-items:baseline;gap:8px;font-family:'Anton',sans-serif;letter-spacing:0.5px;}
+  .logo .g6{font-size:clamp(26px,4vw,34px);color:var(--text);text-shadow:0 0 18px rgba(255,46,147,0.55), 0 0 2px var(--magenta);}
+  .logo .hub{font-size:clamp(26px,4vw,34px);color:var(--teal);text-shadow:0 0 18px rgba(0,229,199,0.55);}
+  .logo small{font-family:'Manrope';font-weight:600;font-size:11px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-left:2px;}
+
+  .top-actions{display:flex;align-items:center;gap:10px;}
+  .lang-toggle{display:flex;background:var(--bg-panel);border:1px solid var(--line);border-radius:999px;padding:3px;}
+  .lang-toggle button{border:none;background:transparent;color:var(--text-dim);font-family:'JetBrains Mono';font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;transition:.15s;}
+  .lang-toggle button.active{background:var(--magenta);color:#fff;}
+
+  .account-chip{display:flex;align-items:center;gap:8px;background:var(--bg-panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 6px;cursor:pointer;}
+  .account-chip .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--magenta),var(--teal));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;}
+  .account-chip span{font-size:13px;font-weight:700;}
+
+  .btn{border:none;border-radius:10px;padding:10px 16px;font-family:'Manrope';font-weight:700;font-size:14px;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--magenta);color:#fff;}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--teal);}
+  .btn-teal{background:var(--teal);color:#03231d;}
+
+  /* ---- nav tabs ---- */
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 0 18px;scrollbar-width:none;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{flex:0 0 auto;background:var(--bg-panel);border:1px solid var(--line);color:var(--text-dim);font-family:'Manrope';font-weight:700;font-size:13px;padding:10px 16px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  nav.tabs button.active{background:var(--bg-panel-2);border-color:var(--magenta);color:var(--text);box-shadow:0 0 0 1px var(--magenta) inset;}
+
+  /* ---- hero ---- */
+  .hero{position:relative;border-radius:20px;overflow:hidden;padding:40px 28px;margin-bottom:24px;
+    background:linear-gradient(135deg, rgba(255,46,147,0.15), rgba(0,229,199,0.08)), var(--bg-panel);
+    border:1px solid var(--line);}
+  .hero h1{font-family:'Anton';font-size:clamp(30px,5.5vw,54px);line-height:1.02;margin:0 0 12px;letter-spacing:0.5px;}
+  .hero h1 .accent{color:var(--magenta);}
+  .hero p{color:var(--text-dim);font-size:15px;max-width:520px;margin:0 0 20px;line-height:1.55;}
+  .hero-stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:18px;}
+  .hero-stats div{font-family:'JetBrains Mono';}
+  .hero-stats .num{font-size:22px;font-weight:700;color:var(--teal);}
+  .hero-stats .lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+
+  /* ---- panels/cards ---- */
+  .panel{background:var(--bg-panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+  .panel h2{font-family:'Anton';font-size:22px;margin:0 0 4px;letter-spacing:0.3px;}
+  .panel .sub{color:var(--text-dim);font-size:13px;margin:0 0 18px;}
+
+  /* leaderboard */
+  .lb-row{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:10px;border-bottom:1px solid var(--line);}
+  .lb-row:last-child{border-bottom:none;}
+  .lb-rank{font-family:'JetBrains Mono';font-weight:700;width:30px;color:var(--text-dim);}
+  .lb-row:nth-child(1) .lb-rank{color:var(--yellow);}
+  .lb-row:nth-child(2) .lb-rank{color:#C9CBD6;}
+  .lb-row:nth-child(3) .lb-rank{color:var(--orange);}
+  .lb-name{flex:1;font-weight:700;font-size:14px;}
+  .lb-country{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono';}
+  .lb-score{font-family:'JetBrains Mono';font-weight:700;color:var(--teal);}
+
+  /* chat */
+  .chat-box{height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:6px 4px 10px;margin-bottom:12px;}
+  .msg{max-width:78%;padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.4;background:var(--bg-panel-2);border:1px solid var(--line);}
+  .msg .who{font-family:'JetBrains Mono';font-size:11px;color:var(--teal);margin-bottom:3px;font-weight:700;}
+  .msg.mine{align-self:flex-end;background:rgba(255,46,147,0.16);border-color:rgba(255,46,147,0.4);}
+  .chat-input{display:flex;gap:8px;}
+  .chat-input input{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Manrope';font-size:14px;}
+  .chat-input input:focus{outline:none;border-color:var(--teal);}
+
+  /* quiz */
+  .quiz-q{font-weight:700;font-size:16px;margin-bottom:14px;}
+  .quiz-opt{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;margin-bottom:9px;cursor:pointer;font-family:'Manrope';font-size:14px;font-weight:600;transition:.12s;}
+  .quiz-opt:hover{border-color:var(--teal);}
+  .quiz-opt.correct{border-color:var(--teal);background:rgba(0,229,199,0.14);}
+  .quiz-opt.wrong{border-color:var(--magenta);background:rgba(255,46,147,0.14);}
+  .quiz-progress{font-family:'JetBrains Mono';font-size:12px;color:var(--text-dim);margin-bottom:16px;}
+
+  /* gallery */
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+  .g-card{background:var(--bg-panel-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .g-card img{width:100%;height:150px;object-fit:cover;display:block;background:#000;}
+  .g-card .body{padding:10px 12px;}
+  .g-card .cat{font-family:'JetBrains Mono';font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--orange);}
+  .g-card .cap{font-size:13px;margin:4px 0 8px;color:var(--text);}
+  .g-card .foot{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);}
+  .like-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;font-weight:700;}
+  .like-btn.liked{color:var(--magenta);}
+
+  /* ai chat */
+  .ai-box{min-height:280px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:12px;padding:4px;}
+  .ai-msg{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;max-width:85%;white-space:pre-wrap;}
+  .ai-msg.user{align-self:flex-end;background:rgba(255,46,147,0.16);border:1px solid rgba(255,46,147,0.4);}
+  .ai-msg.assistant{align-self:flex-start;background:var(--bg-panel-2);border:1px solid var(--line);}
+  .ai-msg .tag{font-family:'JetBrains Mono';font-size:10px;color:var(--teal);margin-bottom:4px;font-weight:700;text-transform:uppercase;}
+
+  input,textarea{font-family:'Manrope';}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+  .field input,.field select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--teal);}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(4,5,10,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:28px;width:100%;max-width:400px;}
+  .modal h3{font-family:'Anton';font-size:22px;margin:0 0 4px;}
+  .modal .sub{color:var(--text-dim);font-size:13px;margin-bottom:18px;}
+  .modal-tabs{display:flex;gap:8px;margin-bottom:18px;}
+  .modal-tabs button{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--text-dim);padding:9px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;}
+  .modal-tabs button.active{background:var(--magenta);color:#fff;border-color:var(--magenta);}
+  .error-msg{color:var(--magenta);font-size:13px;margin-top:-6px;margin-bottom:12px;}
+  .close-x{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;}
+
+  .empty{color:var(--text-dim);font-size:14px;padding:20px 0;text-align:center;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg-panel-2);border:1px solid var(--teal);color:var(--text);padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+
+  footer{text-align:center;color:var(--text-dim);font-size:12px;padding:30px 0 10px;line-height:1.6;}
+
+  @media (max-width:640px){
+    .hero{padding:28px 18px;}
+    .hero-stats{gap:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="horizon">
+  <div class="sun"></div>
+  <svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gridGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FF2E93"/>
+        <stop offset="100%" stop-color="#00E5C7"/>
+      </linearGradient>
+    </defs>
+    <g stroke="url(#gridGrad)" stroke-width="1.2" fill="none">
+      <path d="M0,300 L500,60 L1000,300"/>
+      <path d="M60,300 L500,90 L940,300"/>
+      <path d="M160,300 L500,120 L840,300"/>
+      <path d="M260,300 L500,150 L740,300"/>
+      <path d="M360,300 L500,180 L640,300"/>
+      <path d="M0,300 L1000,300"/>
+      <path d="M0,260 L1000,260"/>
+      <path d="M0,220 L1000,220"/>
+    </g>
+  </svg>
+</div>
+
+<div id="app"></div>
+
+<script>
+/* ============ I18N ============ */
+const I18N = {
+  fr: {
+    tag: "Application non-officielle de fans",
+    heroTitle1: "LA COMMUNAUTÉ", heroTitleAccent: "GTA 6",
+    heroDesc: "Classement mondial, chat en direct, quiz, galerie de tenues & véhicules, et un assistant IA dédié. Le point de ralliement des fans avant le 19 novembre 2026.",
+    statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie",
+    navHome: "Accueil", navRank: "Classement", navChat: "Chat", navQuiz: "Quiz", navGallery: "Galerie", navAI: "Assistant IA",
+    loginBtn: "Se connecter", createAccount: "Créer un compte",
+    infoTitle: "Le point sur GTA 6", infoSub: "Infos officielles confirmées par Rockstar / Take-Two",
+    rankTitle: "Classement mondial", rankSub: "Gagne des points en répondant aux quiz",
+    chatTitle: "Chat communautaire", chatSub: "Discute en direct avec les fans du monde entier",
+    chatPlaceholder: "Écris ton message...", chatSend: "Envoyer",
+    quizTitle: "Quiz GTA 6", quizSub: "Teste tes connaissances et grimpe au classement",
+    quizStart: "Démarrer le quiz", quizNext: "Question suivante", quizFinish: "Voir mon score",
+    quizResultTitle: "Résultat", quizScoreOf: "sur",
+    galleryTitle: "Galerie communautaire", gallerySub: "Montre ta tenue ou ton véhicule",
+    galleryAdd: "Publier", galleryImgUrl: "Lien de l'image (URL)", galleryCategory: "Catégorie", galleryCaption: "Légende (optionnel)",
+    catTenue: "Tenue", catVehicule: "Véhicule",
+    aiTitle: "Assistant IA — Ray", aiSub: "Pose tes questions sur GTA 6 (infos officielles et discussion générale)",
+    aiPlaceholder: "Demande à Ray...", aiWelcome: "Salut ! Je suis Ray 🤙 Pose-moi une question sur GTA 6 : le setting, les persos, les dates, les mécaniques probables...",
+    loginPseudo: "Pseudo", loginPin: "Code PIN (4 à 6 chiffres)", loginCountry: "Pays (optionnel, ex: FR)",
+    loginSubmit: "Se connecter", registerSubmit: "Créer mon compte",
+    logout: "Déconnexion", needAccount: "Connecte-toi pour participer",
+    footerText: "Application communautaire non-officielle. Non affiliée à Rockstar Games ni à Take-Two Interactive.",
+    close: "Fermer", loading: "Chargement...", empty: "Rien à afficher pour le moment.",
+    typing: "Ray réfléchit...",
+    scoreEarned: "points gagnés", correct: "Bonne réponse !", incorrect: "Mauvaise réponse.",
+    facts: [
+      {q:"Date de sortie", a:"19 novembre 2026, sur PS5 et Xbox Series X|S."},
+      {q:"Studio", a:"Développé par Rockstar Games, édité par Take-Two Interactive."},
+      {q:"Lieu", a:"L'État fictif de Leonida (inspiré de la Floride), avec Vice City comme ville principale."},
+      {q:"Protagonistes", a:"Lucia Caminos et Jason Duval, un duo à la Bonnie & Clyde."},
+      {q:"Prix", a:"79,99$ (édition standard) / 99,99$ (édition Ultimate)."}
+    ]
+  },
+  en: {
+    tag: "Unofficial fan-made application",
+    heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
+    heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
+    statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release",
+    navHome: "Home", navRank: "Leaderboard", navChat: "Chat", navQuiz: "Quiz", navGallery: "Gallery", navAI: "AI Assistant",
+    loginBtn: "Log in", createAccount: "Create account",
+    infoTitle: "GTA 6 rundown", infoSub: "Officially confirmed by Rockstar / Take-Two",
+    rankTitle: "Global leaderboard", rankSub: "Earn points by answering quizzes",
+    chatTitle: "Community chat", chatSub: "Chat live with fans from around the world",
+    chatPlaceholder: "Type your message...", chatSend: "Send",
+    quizTitle: "GTA 6 Quiz", quizSub: "Test your knowledge and climb the leaderboard",
+    quizStart: "Start quiz", quizNext: "Next question", quizFinish: "See my score",
+    quizResultTitle: "Result", quizScoreOf: "out of",
+    galleryTitle: "Community gallery", gallerySub: "Show off your outfit or vehicle",
+    galleryAdd: "Post", galleryImgUrl: "Image link (URL)", galleryCategory: "Category", galleryCaption: "Caption (optional)",
+    catTenue: "Outfit", catVehicule: "Vehicle",
+    aiTitle: "AI Assistant — Ray", aiSub: "Ask anything about GTA 6 (official info & general discussion)",
+    aiPlaceholder: "Ask Ray...", aiWelcome: "Hey! I'm Ray 🤙 Ask me anything about GTA 6: setting, characters, dates, likely mechanics...",
+    loginPseudo: "Username", loginPin: "PIN code (4 to 6 digits)", loginCountry: "Country (optional, e.g. US)",
+    loginSubmit: "Log in", registerSubmit: "Create account",
+    logout: "Log out", needAccount: "Log in to take part",
+    footerText: "Unofficial fan community app. Not affiliated with Rockstar Games or Take-Two Interactive.",
+    close: "Close", loading: "Loading...", empty: "Nothing to show yet.",
+    typing: "Ray is thinking...",
+    scoreEarned: "points earned", correct: "Correct!", incorrect: "Wrong answer.",
+    facts: [
+      {q:"Release date", a:"November 19, 2026, on PS5 and Xbox Series X|S."},
+      {q:"Studio", a:"Developed by Rockstar Games, published by Take-Two Interactive."},
+      {q:"Setting", a:"The fictional state of Leonida (Florida-inspired), with Vice City as the main city."},
+      {q:"Protagonists", a:"Lucia Caminos and Jason Duval, a Bonnie & Clyde-style duo."},
+      {q:"Price", a:"$79.99 (Standard Edition) / $99.99 (Ultimate Edition)."}
+    ]
+  }
+};
+
+/* ============ QUIZ DATA (bilingual, officially confirmed facts only) ============ */
+const QUIZ = [
+  {
+    fr:{q:"À quelle date GTA 6 doit-il sortir ?", opts:["19 novembre 2026","25 décembre 2026","1er mai 2026","19 novembre 2025"]},
+    en:{q:"What is the official release date of GTA 6?", opts:["November 19, 2026","December 25, 2026","May 1, 2026","November 19, 2025"]},
+    correct:0
+  },
+  {
+    fr:{q:"Sur quelles plateformes GTA 6 sort-il en premier ?", opts:["PS5 et Xbox Series X|S","PC uniquement","Switch 2","PS4 et Xbox One"]},
+    en:{q:"Which platforms does GTA 6 launch on first?", opts:["PS5 and Xbox Series X|S","PC only","Switch 2","PS4 and Xbox One"]},
+    correct:0
+  },
+  {
+    fr:{q:"Comment s'appelle l'État fictif où se déroule GTA 6 ?", opts:["Leonida","San Andreas","Liberty State","Alderney"]},
+    en:{q:"What is the fictional state GTA 6 is set in?", opts:["Leonida","San Andreas","Liberty State","Alderney"]},
+    correct:0
+  },
+  {
+    fr:{q:"Quelle est la ville principale de GTA 6 ?", opts:["Vice City","Liberty City","Los Santos","San Fierro"]},
+    en:{q:"What is the main city in GTA 6?", opts:["Vice City","Liberty City","Los Santos","San Fierro"]},
+    correct:0
+  },
+  {
+    fr:{q:"Qui sont les deux protagonistes jouables ?", opts:["Lucia Caminos et Jason Duval","Michael et Trevor","Niko et Roman","CJ et Big Smoke"]},
+    en:{q:"Who are the two playable protagonists?", opts:["Lucia Caminos and Jason Duval","Michael and Trevor","Niko and Roman","CJ and Big Smoke"]},
+    correct:0
+  },
+  {
+    fr:{q:"Quelle particularité a Lucia dans la saga GTA ?", opts:["Première protagoniste jouable de l'ère HD en solo","Elle est un personnage secondaire","C'est un personnage jouable en ligne uniquement","Elle apparaissait déjà dans GTA V"]},
+    en:{q:"What's notable about Lucia in the GTA series?", opts:["First solo playable female protagonist of the HD era","She's a minor side character","Only playable in online mode","She already appeared in GTA V"]},
+    correct:0
+  },
+  {
+    fr:{q:"Qui développe GTA 6 ?", opts:["Rockstar Games","Ubisoft","EA","CD Projekt Red"]},
+    en:{q:"Who is developing GTA 6?", opts:["Rockstar Games","Ubisoft","EA","CD Projekt Red"]},
+    correct:0
+  },
+  {
+    fr:{q:"Quel est le jeu précédent de la saga principale ?", opts:["Grand Theft Auto V (2013)","Grand Theft Auto IV","Red Dead Redemption 2","GTA Online"]},
+    en:{q:"What was the previous mainline entry in the series?", opts:["Grand Theft Auto V (2013)","Grand Theft Auto IV","Red Dead Redemption 2","GTA Online"]},
+    correct:0
+  }
+];
+
+/* ============ STATE ============ */
+const state = {
+  lang: localStorage.getItem('g6_lang') || (navigator.language.startsWith('fr') ? 'fr' : 'en'),
+  user: null,
+  tab: 'home',
+  showAuth: false,
+  authMode: 'login',
+  leaderboard: [],
+  chatMessages: [],
+  galleryItems: [],
+  quizIndex: 0,
+  quizScore: 0,
+  quizAnswered: null,
+  quizActive: false,
+  aiMessages: [],
+  aiTyping: false,
+  toastMsg: null
+};
+
+// restore session
+try {
+  const saved = JSON.parse(localStorage.getItem('g6_user') || 'null');
+  if (saved && saved.pseudo && saved.token) state.user = saved;
+} catch {}
+
+function t(key){ return I18N[state.lang][key]; }
+function setLang(l){ state.lang = l; localStorage.setItem('g6_lang', l); render(); }
+function showToast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toastMsg=null; render(); }, 2600); }
+
+async function api(path, opts){
+  const res = await fetch('/api/' + path, opts);
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data.error || ('Erreur ' + res.status));
+  return data;
+}
+
+/* ============ AUTH ============ */
+async function doAuth(action, pseudo, pin, country){
+  try{
+    const data = await api('auth', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action, pseudo, pin, country})
+    });
+    state.user = data.user;
+    localStorage.setItem('g6_user', JSON.stringify(data.user));
+    state.showAuth = false;
+    showToast(state.lang==='fr' ? 'Bienvenue ' + data.user.pseudo + ' !' : 'Welcome ' + data.user.pseudo + '!');
+    render();
+    loadLeaderboard();
+  } catch(e){
+    state.authError = e.message;
+    render();
+  }
+}
+function logout(){
+  state.user = null;
+  localStorage.removeItem('g6_user');
+  render();
+}
+
+/* ============ DATA LOADERS ============ */
+async function loadLeaderboard(){
+  try{ const d = await api('leaderboard'); state.leaderboard = d.leaderboard || []; render(); }catch(e){}
+}
+async function loadChat(){
+  try{ const d = await api('chat'); state.chatMessages = d.messages || []; render(); }catch(e){}
+}
+async function loadGallery(){
+  try{ const d = await api('gallery'); state.galleryItems = d.items || []; render(); }catch(e){}
+}
+
+async function sendChat(text){
+  if (!state.user){ state.showAuth = true; state.authMode='login'; render(); return; }
+  if (!text.trim()) return;
+  try{
+    await api('chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, text})});
+    await loadChat();
+  } catch(e){ showToast(e.message); }
+}
+
+async function postGallery(imageUrl, category, caption){
+  if (!state.user){ state.showAuth = true; render(); return; }
+  try{
+    await api('gallery', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, imageUrl, category, caption})});
+    await loadGallery();
+    showToast(state.lang==='fr' ? 'Publié !' : 'Posted!');
+  } catch(e){ showToast(e.message); }
+}
+
+async function likeGallery(id){
+  if (!state.user){ state.showAuth = true; render(); return; }
+  try{
+    await api('gallery', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'like', id, pseudo: state.user.pseudo, token: state.user.token})});
+    await loadGallery();
+  } catch(e){ showToast(e.message); }
+}
+
+async function submitQuizScore(points){
+  if (!state.user) return;
+  try{
+    const d = await api('leaderboard', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, points})});
+    state.user.score = d.score;
+    localStorage.setItem('g6_user', JSON.stringify(state.user));
+    loadLeaderboard();
+  } catch(e){}
+}
+
+async function sendAI(text){
+  if (!text.trim()) return;
+  state.aiMessages.push({role:'user', content:text});
+  state.aiTyping = true;
+  render();
+  try{
+    const d = await api('ai-chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages: state.aiMessages})});
+    state.aiMessages.push({role:'assistant', content: d.reply});
+  } catch(e){
+    state.aiMessages.push({role:'assistant', content: (state.lang==='fr' ? 'Erreur : ' : 'Error: ') + e.message});
+  }
+  state.aiTyping = false;
+  render();
+}
+
+/* ============ QUIZ LOGIC ============ */
+function startQuiz(){
+  state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null;
+  render();
+}
+function answerQuiz(idx){
+  if (state.quizAnswered !== null) return;
+  state.quizAnswered = idx;
+  if (idx === QUIZ[state.quizIndex].correct) state.quizScore++;
+  render();
+}
+function nextQuiz(){
+  if (state.quizIndex + 1 >= QUIZ.length){
+    const pts = state.quizScore * 15;
+    submitQuizScore(pts);
+    state.quizActive = false;
+    state.quizFinished = true;
+    render();
+    return;
+  }
+  state.quizIndex++;
+  state.quizAnswered = null;
+  render();
+}
+function restartQuiz(){ state.quizFinished = false; startQuiz(); }
+
+/* ============ RENDER ============ */
+function el(html){ const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function releaseCountdown(){
+  const target = new Date('2026-11-19T00:00:00Z').getTime();
+  const diff = target - Date.now();
+  return Math.max(0, Math.ceil(diff / 86400000));
+}
+
+function renderHeader(){
+  return `
+  <header class="top">
+    <div class="logo"><span class="g6">GTA6</span><span class="hub">HUB</span><small>${esc(t('tag'))}</small></div>
+    <div class="top-actions">
+      <div class="lang-toggle">
+        <button data-lang="fr" class="${state.lang==='fr'?'active':''}">FR</button>
+        <button data-lang="en" class="${state.lang==='en'?'active':''}">EN</button>
+      </div>
+      ${state.user ? `
+        <div class="account-chip" id="accountChip">
+          <div class="av">${esc(state.user.pseudo[0].toUpperCase())}</div>
+          <span>${esc(state.user.pseudo)}</span>
+        </div>
+      ` : `<button class="btn btn-primary" id="openAuth">${esc(t('loginBtn'))}</button>`}
+    </div>
+  </header>`;
+}
+
+function renderTabs(){
+  const tabs = [
+    ['home', t('navHome'), '🏠'],
+    ['rank', t('navRank'), '🏆'],
+    ['chat', t('navChat'), '💬'],
+    ['quiz', t('navQuiz'), '❓'],
+    ['gallery', t('navGallery'), '🚗'],
+    ['ai', t('navAI'), '🤖']
+  ];
+  return `<nav class="tabs">${tabs.map(([id,label,icon]) =>
+    `<button data-tab="${id}" class="${state.tab===id?'active':''}">${icon} ${esc(label)}</button>`
+  ).join('')}</nav>`;
+}
+
+function renderHome(){
+  const days = releaseCountdown();
+  return `
+  <div class="hero">
+    <h1>${esc(t('heroTitle1'))} <span class="accent">${esc(t('heroTitleAccent'))}</span></h1>
+    <p>${esc(t('heroDesc'))}</p>
+    <div class="hero-stats">
+      <div><div class="num">${state.leaderboard.length || '—'}</div><div class="lbl">${esc(t('statMembers'))}</div></div>
+      <div><div class="num">${state.chatMessages.length || '—'}</div><div class="lbl">${esc(t('statMsgs'))}</div></div>
+      <div><div class="num">${days}</div><div class="lbl">${esc(t('statDays'))}</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>${esc(t('infoTitle'))}</h2>
+    <p class="sub">${esc(t('infoSub'))}</p>
+    ${t('facts').map(f => `
+      <div class="lb-row" style="border-bottom:1px solid var(--line);">
+        <div style="flex:1"><strong>${esc(f.q)}</strong><div style="color:var(--text-dim);font-size:13px;margin-top:3px;">${esc(f.a)}</div></div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+function renderRank(){
+  const rows = state.leaderboard.map((u, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-name">${esc(u.pseudo)} <span class="lb-country">${esc(u.country)}</span></div>
+      <div class="lb-score">${u.score} pts</div>
+    </div>
+  `).join('') || `<div class="empty">${esc(t('empty'))}</div>`;
+  return `<div class="panel"><h2>${esc(t('rankTitle'))}</h2><p class="sub">${esc(t('rankSub'))}</p>${rows}</div>`;
+}
+
+function renderChat(){
+  const msgs = state.chatMessages.map(m => `
+    <div class="msg ${state.user && m.pseudo===state.user.pseudo ? 'mine':''}">
+      <div class="who">${esc(m.pseudo)} · ${esc(m.country)}</div>
+      ${esc(m.text)}
+    </div>
+  `).join('') || `<div class="empty">${esc(t('empty'))}</div>`;
+  return `
+  <div class="panel">
+    <h2>${esc(t('chatTitle'))}</h2>
+    <p class="sub">${esc(t('chatSub'))}</p>
+    <div class="chat-box" id="chatBox">${msgs}</div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="${esc(t('chatPlaceholder'))}" maxlength="500" ${state.user?'':'disabled'}/>
+      <button class="btn btn-primary" id="chatSendBtn">${esc(t('chatSend'))}</button>
+    </div>
+    ${!state.user ? `<p class="sub" style="margin-top:10px;">${esc(t('needAccount'))}</p>` : ''}
+  </div>`;
+}
+
+function renderQuiz(){
+  if (state.quizFinished){
+    return `
+    <div class="panel" style="text-align:center;">
+      <h2>${esc(t('quizResultTitle'))}</h2>
+      <div style="font-family:'Anton';font-size:52px;color:var(--teal);margin:14px 0;">${state.quizScore} / ${QUIZ.length}</div>
+      <p class="sub">+${state.quizScore*15} ${esc(t('scoreEarned'))}</p>
+      <button class="btn btn-primary" id="restartQuizBtn">${esc(t('quizStart'))}</button>
+    </div>`;
+  }
+  if (!state.quizActive){
+    return `
+    <div class="panel" style="text-align:center;">
+      <h2>${esc(t('quizTitle'))}</h2>
+      <p class="sub">${esc(t('quizSub'))}</p>
+      <button class="btn btn-primary" id="startQuizBtn">${esc(t('quizStart'))}</button>
+      ${!state.user ? `<p class="sub" style="margin-top:14px;">${esc(t('needAccount'))}</p>` : ''}
+    </div>`;
+  }
+  const q = QUIZ[state.quizIndex];
+  const data = q[state.lang];
+  const answered = state.quizAnswered;
+  return `
+  <div class="panel">
+    <div class="quiz-progress">${state.quizIndex+1} / ${QUIZ.length}</div>
+    <div class="quiz-q">${esc(data.q)}</div>
+    ${data.opts.map((opt, i) => {
+      let cls = 'quiz-opt';
+      if (answered !== null){
+        if (i === q.correct) cls += ' correct';
+        else if (i === answered) cls += ' wrong';
+      }
+      return `<button class="${cls}" data-idx="${i}" ${answered!==null?'disabled':''}>${esc(opt)}</button>`;
+    }).join('')}
+    ${answered !== null ? `<button class="btn btn-primary" id="nextQuizBtn" style="margin-top:10px;">${state.quizIndex+1>=QUIZ.length ? esc(t('quizFinish')) : esc(t('quizNext'))}</button>` : ''}
+  </div>`;
+}
+
+function renderGallery(){
+  const items = state.galleryItems.map(it => `
+    <div class="g-card">
+      <img src="${esc(it.imageUrl)}" loading="lazy" onerror="this.style.opacity=0.2"/>
+      <div class="body">
+        <div class="cat">${it.category==='tenue' ? esc(t('catTenue')) : esc(t('catVehicule'))}</div>
+        <div class="cap">${esc(it.caption || '')}</div>
+        <div class="foot">
+          <span>@${esc(it.pseudo)}</span>
+          <button class="like-btn ${state.user && it.likes.includes(state.user.pseudo)?'liked':''}" data-like="${it.id}">❤ ${it.likes.length}</button>
+        </div>
+      </div>
+    </div>
+  `).join('') || `<div class="empty">${esc(t('empty'))}</div>`;
+  return `
+  <div class="panel">
+    <h2>${esc(t('galleryTitle'))}</h2>
+    <p class="sub">${esc(t('gallerySub'))}</p>
+    ${state.user ? `
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:20px;">
+        <div class="field"><label>${esc(t('galleryImgUrl'))}</label><input id="gImgUrl" placeholder="https://..."/></div>
+        <div class="field"><label>${esc(t('galleryCategory'))}</label>
+          <select id="gCategory">
+            <option value="tenue">${esc(t('catTenue'))}</option>
+            <option value="vehicule">${esc(t('catVehicule'))}</option>
+          </select>
+        </div>
+        <div class="field"><label>${esc(t('galleryCaption'))}</label><input id="gCaption" maxlength="200"/></div>
+        <button class="btn btn-teal" id="postGalleryBtn">${esc(t('galleryAdd'))}</button>
+      </div>
+    ` : `<p class="sub">${esc(t('needAccount'))}</p>`}
+    <div class="gallery-grid">${items}</div>
+  </div>`;
+}
+
+function renderAI(){
+  const msgs = state.aiMessages.length ? state.aiMessages.map(m => `
+    <div class="ai-msg ${m.role}">
+      <div class="tag">${m.role==='user' ? (state.user?state.user.pseudo:'You') : 'Ray'}</div>
+      ${esc(m.content)}
+    </div>
+  `).join('') : `<div class="ai-msg assistant"><div class="tag">Ray</div>${esc(t('aiWelcome'))}</div>`;
+  return `
+  <div class="panel">
+    <h2>${esc(t('aiTitle'))}</h2>
+    <p class="sub">${esc(t('aiSub'))}</p>
+    <div class="ai-box" id="aiBox">${msgs}${state.aiTyping ? `<div class="ai-msg assistant"><div class="tag">Ray</div>${esc(t('typing'))}</div>`:''}</div>
+    <div class="chat-input">
+      <input id="aiInput" placeholder="${esc(t('aiPlaceholder'))}" ${state.aiTyping?'disabled':''}/>
+      <button class="btn btn-primary" id="aiSendBtn" ${state.aiTyping?'disabled':''}>${esc(t('chatSend'))}</button>
+    </div>
+  </div>`;
+}
+
+function renderAuthModal(){
+  if (!state.showAuth) return '';
+  const mode = state.authMode;
+  return `
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" style="position:relative;">
+      <button class="close-x" id="closeAuth">✕</button>
+      <h3>${mode==='login' ? esc(t('loginBtn')) : esc(t('createAccount'))}</h3>
+      <p class="sub">GTA6 HUB</p>
+      <div class="modal-tabs">
+        <button data-mode="login" class="${mode==='login'?'active':''}">${esc(t('loginBtn'))}</button>
+        <button data-mode="register" class="${mode==='register'?'active':''}">${esc(t('createAccount'))}</button>
+      </div>
+      <div class="field"><label>${esc(t('loginPseudo'))}</label><input id="authPseudo" maxlength="18"/></div>
+      <div class="field"><label>${esc(t('loginPin'))}</label><input id="authPin" type="password" maxlength="6" inputmode="numeric"/></div>
+      ${mode==='register' ? `<div class="field"><label>${esc(t('loginCountry'))}</label><input id="authCountry" maxlength="2" placeholder="FR"/></div>` : ''}
+      ${state.authError ? `<div class="error-msg">${esc(state.authError)}</div>` : ''}
+      <button class="btn btn-primary" id="authSubmit" style="width:100%;">${mode==='login' ? esc(t('loginSubmit')) : esc(t('registerSubmit'))}</button>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  let body = '';
+  if (state.tab==='home') body = renderHome();
+  else if (state.tab==='rank') body = renderRank();
+  else if (state.tab==='chat') body = renderChat();
+  else if (state.tab==='quiz') body = renderQuiz();
+  else if (state.tab==='gallery') body = renderGallery();
+  else if (state.tab==='ai') body = renderAI();
+
+  app.innerHTML = `
+    ${renderHeader()}
+    ${renderTabs()}
+    ${body}
+    <footer>${esc(t('footerText'))}<br/>GTA6 HUB — 2026</footer>
+    ${renderAuthModal()}
+    ${state.toastMsg ? `<div class="toast">${esc(state.toastMsg)}</div>` : ''}
+  `;
+
+  attachEvents();
+
+  const chatBox = document.getElementById('chatBox');
+  if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+  const aiBox = document.getElementById('aiBox');
+  if (aiBox) aiBox.scrollTop = aiBox.scrollHeight;
+}
+
+function attachEvents(){
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; state.quizFinished=false; render();
+    if (b.dataset.tab==='rank') loadLeaderboard();
+    if (b.dataset.tab==='chat') loadChat();
+    if (b.dataset.tab==='gallery') loadGallery();
+  });
+
+  const openAuth = document.getElementById('openAuth');
+  if (openAuth) openAuth.onclick = () => { state.showAuth = true; state.authMode='login'; state.authError=null; render(); };
+  const closeAuth = document.getElementById('closeAuth');
+  if (closeAuth) closeAuth.onclick = () => { state.showAuth = false; render(); };
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.onclick = (e) => { if (e.target === overlay){ state.showAuth=false; render(); } };
+
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { state.authMode = b.dataset.mode; state.authError=null; render(); });
+
+  const authSubmit = document.getElementById('authSubmit');
+  if (authSubmit) authSubmit.onclick = () => {
+    const pseudo = document.getElementById('authPseudo').value.trim();
+    const pin = document.getElementById('authPin').value.trim();
+    const countryEl = document.getElementById('authCountry');
+    const country = countryEl ? countryEl.value.trim().toUpperCase() : undefined;
+    doAuth(state.authMode, pseudo, pin, country);
+  };
+
+  const accountChip = document.getElementById('accountChip');
+  if (accountChip) accountChip.onclick = () => { if (confirm(state.lang==='fr'?'Se déconnecter ?':'Log out?')) logout(); };
+
+  const chatInput = document.getElementById('chatInput');
+  const chatSendBtn = document.getElementById('chatSendBtn');
+  if (chatSendBtn) chatSendBtn.onclick = () => { sendChat(chatInput.value); chatInput.value=''; };
+  if (chatInput) chatInput.onkeydown = (e) => { if (e.key==='Enter'){ sendChat(chatInput.value); chatInput.value=''; } };
+
+  const startQuizBtn = document.getElementById('startQuizBtn');
+  if (startQuizBtn) startQuizBtn.onclick = () => {
+    if (!state.user){ state.showAuth=true; render(); return; }
+    startQuiz();
+  };
+  const restartQuizBtn = document.getElementById('restartQuizBtn');
+  if (restartQuizBtn) restartQuizBtn.onclick = restartQuiz;
+  document.querySelectorAll('[data-idx]').forEach(b => b.onclick = () => answerQuiz(parseInt(b.dataset.idx)));
+  const nextQuizBtn = document.getElementById('nextQuizBtn');
+  if (nextQuizBtn) nextQuizBtn.onclick = nextQuiz;
+
+  const postGalleryBtn = document.getElementById('postGalleryBtn');
+  if (postGalleryBtn) postGalleryBtn.onclick = () => {
+    const url = document.getElementById('gImgUrl').value.trim();
+    const cat = document.getElementById('gCategory').value;
+    const cap = document.getElementById('gCaption').value.trim();
+    if (!url){ showToast(state.lang==='fr'?'Ajoute un lien image':'Add an image link'); return; }
+    postGallery(url, cat, cap);
+  };
+  document.querySelectorAll('[data-like]').forEach(b => b.onclick = () => likeGallery(b.dataset.like));
+
+  const aiInput = document.getElementById('aiInput');
+  const aiSendBtn = document.getElementById('aiSendBtn');
+  if (aiSendBtn) aiSendBtn.onclick = () => { const v = aiInput.value; aiInput.value=''; sendAI(v); };
+  if (aiInput) aiInput.onkeydown = (e) => { if (e.key==='Enter'){ const v = aiInput.value; aiInput.value=''; sendAI(v); } };
+}
+
+render();
+loadLeaderboard();
+loadChat();
+loadGallery();
+setInterval(() => { if (state.tab==='chat') loadChat(); }, 5000);
+setInterval(() => { if (state.tab==='rank') loadLeaderboard(); }, 15000);
+</script>
+</body>
+</html>
