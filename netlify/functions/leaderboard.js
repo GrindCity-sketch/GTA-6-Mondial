@@ -1,4 +1,4 @@
-cconst { store, json, options } = require('./_store');
+const { store, json, options } = require('./_store');
 
 exports.handler = async (event) => {
     if (event.httpMethod === 'OPTIONS') return options();
