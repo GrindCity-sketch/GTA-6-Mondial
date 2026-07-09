@@ -222,7 +222,7 @@ const I18N = {
       {q:"Prix", a:"79,99$ (édition standard) / 99,99$ (édition Ultimate)."}
     ]
   },
-  een: {
+en: {
     tag: "Unofficial fan-made application",
     heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
     heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
@@ -316,6 +316,11 @@ const state = {
   quizScore: 0,
   quizAnswered: null,
   quizActive: false,
+        quizData: null,
+        quizLoading: false,
+        quizStartTime: null,
+        quizTimeLeft: null,
+        quizLastTime: null,
   aiMessages: [],
   aiTyping: false,
   toastMsg: null
@@ -404,12 +409,12 @@ async function likeGallery(id){
   } catch(e){ showToast(e.message); }
 }
 
-async function submitQuizScore(points){
+    async function submitQuizScore(points, time){
   if (!state.user) return;
   try{
     const d = await api('leaderboard', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, points})});
-    state.user.score = d.score;
+            body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, points, time})});
+    state.user.score = d.score; if (d.bestTime) state.user.bestTime = d.bestTime;
     localStorage.setItem('g6_user', JSON.stringify(state.user));
     loadLeaderboard();
   } catch(e){}
@@ -432,36 +437,61 @@ async function sendAI(text){
 }
 
 /* ============ QUIZ LOGIC ============ */
+      let quizTimerId = null;
+      const QUIZ_QUESTION_SECONDS = 20;
+      function clearQuizTimer(){ if (quizTimerId){ clearInterval(quizTimerId); quizTimerId = null; } }
+      function startQuestionTimer(){
+              clearQuizTimer();
+              state.quizTimeLeft = QUIZ_QUESTION_SECONDS;
+              quizTimerId = setInterval(() => {
+                        state.quizTimeLeft--;
+                        const el = document.getElementById('quiz-timer-val');
+                        if (el) el.textContent = state.quizTimeLeft;
+                        if (state.quizTimeLeft <= 0){
+                                    clearQuizTimer();
+                                    if (state.quizAnswered === null) state.quizAnswered = -1;
+                                    nextQuiz();
+                        }
+              }, 1000);
+      }
+      function fmtTime(sec){
+              if (sec == null) return '--';
+              const m = Math.floor(sec / 60); const s = sec % 60;
+              return m + ':' + (s < 10 ? '0' : '') + s;
+      }
 function startQuiz(){
-      state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true;
+      state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true; state.quizStartTime = Date.now();
       render();
       api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lang: state.lang})}).then(d => {
               state.quizData = (d && Array.isArray(d.questions) && d.questions.length) ? d.questions : QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
               state.quizLoading = false;
-              render();
+              render(); startQuestionTimer();
       }).catch(() => {
               state.quizData = QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
               state.quizLoading = false;
-              render();
+              render(); startQuestionTimer();
       });
 }
 function answerQuiz(idx){
       if (state.quizAnswered !== null || !state.quizData) return;
-      state.quizAnswered = idx;
+      state.quizAnswered = idx; clearQuizTimer();
       if (idx === state.quizData[state.quizIndex].answerIndex) state.quizScore++;
       render();
 }
 function nextQuiz(){
   if (state.quizIndex + 1 >= state.quizData.length){
+          clearQuizTimer();
+          const elapsed = Math.round((Date.now() - (state.quizStartTime || Date.now())) / 1000);
+          state.quizLastTime = elapsed;
     const pts = state.quizScore * 15;
-    submitQuizScore(pts);
+          submitQuizScore(pts, elapsed);
     state.quizActive = false;
     state.quizFinished = true;
     render();
     return;
   }
   state.quizIndex++;
-  state.quizAnswered = null;
+  state.quizAnswered = null; startQuestionTimer();
   render();
 }
 function restartQuiz(){ state.quizFinished = false; startQuiz(); }
@@ -521,6 +551,13 @@ function renderHome(){
       <div><div class="num">${days}</div><div class="lbl">${esc(t('statDays'))}</div></div>
     </div>
   </div>
+        <div class="panel">
+                <h2>${esc(t('teaserTitle'))}</h2>
+                        <p class="sub">${esc(t('teaserSub'))}</p>
+                                <div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;">
+                                          <iframe src="https://www.youtube.com/embed/QdBZY2fkU-0" title="GTA 6 Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+                                                  </div>
+                                                        </div>
   <div class="panel">
     <h2>${esc(t('infoTitle'))}</h2>
     <p class="sub">${esc(t('infoSub'))}</p>
@@ -538,6 +575,7 @@ function renderRank(){
       <div class="lb-rank">#${i+1}</div>
       <div class="lb-name">${esc(u.pseudo)} <span class="lb-country">${esc(u.country)}</span></div>
       <div class="lb-score">${u.score} pts</div>
+              <div class="lb-country">${u.bestTime ? '⏱ ' + fmtTime(u.bestTime) : ''}</div>
     </div>
   `).join('') || `<div class="empty">${esc(t('empty'))}</div>`;
   return `<div class="panel"><h2>${esc(t('rankTitle'))}</h2><p class="sub">${esc(t('rankSub'))}</p>${rows}</div>`;
@@ -570,6 +608,7 @@ function renderQuiz(){
                             <h2>${esc(t('quizResultTitle'))}</h2>
                                     <div style="font-family:'Anton';font-size:52px;color:var(--teal);margin:14px 0;">${state.quizScore} / ${(state.quizData||QUIZ).length}</div>
                                             <p class="sub">+${state.quizScore*15} ${esc(t('scoreEarned'))}</p>
+                                                            <p class="sub">${esc(t('quizYourTime'))}: ${fmtTime(state.quizLastTime)}${state.user && state.user.bestTime ? ' &middot; ' + esc(t('quizBestTime')) + ': ' + fmtTime(state.user.bestTime) + (state.quizLastTime===state.user.bestTime ? ' \u{1F3C6} ' + esc(t('quizNewRecord')) : '') : ''}</p>
                                                     <button class="btn btn-primary" id="restartQuizBtn">${esc(t('quizStart'))}</button>
                                                           </div>`;
       }
@@ -594,6 +633,7 @@ function renderQuiz(){
       return `
           <div class="panel">
                 <div class="quiz-progress">${state.quizIndex+1} / ${state.quizData.length}</div>
+                          <div class="quiz-progress">⏱ ${esc(t('quizTimeLeft'))}: <span id="quiz-timer-val">${state.quizTimeLeft != null ? state.quizTimeLeft : QUIZ_QUESTION_SECONDS}</span>s</div>
                       <div class="quiz-q">${esc(data.question)}</div>
                             ${data.choices.map((opt, i) => {
                                       let cls = 'quiz-opt';
