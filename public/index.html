@@ -193,7 +193,7 @@ const I18N = {
     heroTitle1: "LA COMMUNAUTÉ", heroTitleAccent: "GTA 6",
     heroDesc: "Classement mondial, chat en direct, quiz, galerie de tenues & véhicules, et un assistant IA dédié. Le point de ralliement des fans avant le 19 novembre 2026.",
     statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie",
-    navHome: "Accueil", navRank: "Classement", navChat: "Chat", navQuiz: "Quiz", navGallery: "Galerie", navAI: "Assistant IA",
+    navHome: "Accueil", navRank: "Classement", navChat: "Chat", navQuiz: "Quiz", navGallery: "Galerie", navAI: "Assistant IA", navMap: "Lieux",
     loginBtn: "Se connecter", createAccount: "Créer un compte",
     infoTitle: "Le point sur GTA 6", infoSub: "Infos officielles confirmées par Rockstar / Take-Two",
     rankTitle: "Classement mondial", rankSub: "Gagne des points en répondant aux quiz",
@@ -203,7 +203,7 @@ const I18N = {
     quizStart: "Démarrer le quiz", quizNext: "Question suivante", quizFinish: "Voir mon score",
     quizResultTitle: "Résultat", quizScoreOf: "sur",
     galleryTitle: "Galerie communautaire", gallerySub: "Montre ta tenue ou ton véhicule",
-    galleryAdd: "Publier", galleryImgUrl: "Lien de l'image (URL)", galleryCategory: "Catégorie", galleryCaption: "Légende (optionnel)",
+    galleryAdd: "Publier", galleryImgUrl: "Lien de l'image (URL)", galleryCategory: "Catégorie", galleryCaption: "Légende (optionnel)", mapTitle: "Lieux de Leonida", mapSub: "Les régions confirmées officiellement par Rockstar Games", showcaseTitle: "Véhicules, armes & tenues", showcaseSub: "Aperçu officiel de l'Édition Ultime",
     catTenue: "Tenue", catVehicule: "Véhicule",
     aiTitle: "Assistant IA — Ray", aiSub: "Pose tes questions sur GTA 6 (infos officielles et discussion générale)",
     aiPlaceholder: "Demande à Ray...", aiWelcome: "Salut ! Je suis Ray 🤙 Pose-moi une question sur GTA 6 : le setting, les persos, les dates, les mécaniques probables...",
@@ -227,7 +227,7 @@ en: {
     heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
     heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
     statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release",
-    navHome: "Home", navRank: "Leaderboard", navChat: "Chat", navQuiz: "Quiz", navGallery: "Gallery", navAI: "AI Assistant",
+    navHome: "Home", navRank: "Leaderboard", navChat: "Chat", navQuiz: "Quiz", navGallery: "Gallery", navAI: "AI Assistant", navMap: "Locations",
     loginBtn: "Log in", createAccount: "Create account",
     infoTitle: "GTA 6 rundown", infoSub: "Officially confirmed by Rockstar / Take-Two",
     rankTitle: "Global leaderboard", rankSub: "Earn points by answering quizzes",
@@ -237,7 +237,7 @@ en: {
     quizStart: "Start quiz", quizNext: "Next question", quizFinish: "See my score",
     quizResultTitle: "Result", quizScoreOf: "out of",
     galleryTitle: "Community gallery", gallerySub: "Show off your outfit or vehicle",
-    galleryAdd: "Post", galleryImgUrl: "Image link (URL)", galleryCategory: "Category", galleryCaption: "Caption (optional)",
+    galleryAdd: "Post", galleryImgUrl: "Image link (URL)", galleryCategory: "Category", galleryCaption: "Caption (optional)", mapTitle: "Locations of Leonida", mapSub: "Regions officially confirmed by Rockstar Games", showcaseTitle: "Vehicles, weapons & outfits", showcaseSub: "Official Ultimate Edition preview",
     catTenue: "Outfit", catVehicule: "Vehicle",
     aiTitle: "AI Assistant — Ray", aiSub: "Ask anything about GTA 6 (official info & general discussion)",
     aiPlaceholder: "Ask Ray...", aiWelcome: "Hey! I'm Ray 🤙 Ask me anything about GTA 6: setting, characters, dates, likely mechanics...",
@@ -532,6 +532,7 @@ function renderTabs(){
     ['chat', t('navChat'), '💬'],
     ['quiz', t('navQuiz'), '❓'],
     ['gallery', t('navGallery'), '🚗'],
+    ['map', t('navMap'), '🗺️'],
     ['ai', t('navAI'), '🤖']
   ];
   return `<nav class="tabs">${tabs.map(([id,label,icon]) =>
@@ -682,7 +683,8 @@ function renderGallery(){
   </div>`;
 }
 
-function renderAI(){
+const LOCATIONS = [
+function renderAI(){ 
   const msgs = state.aiMessages.length ? state.aiMessages.map(m => `
     <div class="ai-msg ${m.role}">
       <div class="tag">${m.role==='user' ? (state.user?state.user.pseudo:'You') : 'Ray'}</div>
@@ -731,6 +733,7 @@ function render(){
   else if (state.tab==='chat') body = renderChat();
   else if (state.tab==='quiz') body = renderQuiz();
   else if (state.tab==='gallery') body = renderGallery();
+    else if (state.tab==='map') body = renderMap();
   else if (state.tab==='ai') body = renderAI();
 
   app.innerHTML = `
