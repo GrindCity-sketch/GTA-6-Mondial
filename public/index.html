@@ -684,6 +684,53 @@ function renderGallery(){
 }
 
 const LOCATIONS = [
+{img:'lieu-vice-city-01.jpg', name:{fr:'Vice City', en:'Vice City'}, desc:{fr:"Ville principale de GTA 6.", en:"Main city of GTA 6."}},
+{img:'lieu-leonida-keys.jpg', name:{fr:'Leonida Keys', en:'Leonida Keys'}, desc:{fr:"Archipel au sud de Vice City, lie a la contrebande.", en:"Archipelago south of Vice City, tied to smuggling."}},
+{img:'lieu-port-gellhorn.jpg', name:{fr:'Port Gellhorn', en:'Port Gellhorn'}, desc:{fr:"Ville cotiere decatie vue des la premiere bande-annonce.", en:"Run-down coastal town seen since the first trailer."}},
+{img:'lieu-ambrosia.jpg', name:{fr:'Ambrosia', en:'Ambrosia'}, desc:{fr:"Zone rurale associee aux clubs de bikers.", en:"Rural area associated with biker clubs."}},
+{img:'lieu-grassrivers.jpg', name:{fr:'Grassrivers', en:'Grassrivers'}, desc:{fr:"Vastes marecages traverses en hydroglisseur.", en:"Vast swamps crossed by airboat."}},
+{img:'lieu-mont-kalaga.jpg', name:{fr:'Mont Kalaga', en:'Mount Kalaga'}, desc:{fr:"Parc national montagneux.", en:"Mountainous national park."}}
+];
+
+const SHOWCASE = [
+{img:'vehicule-grotti-cheetah.jpg', cap:{fr:'Grotti Cheetah', en:'Grotti Cheetah'}},
+{img:'vehicule-vapid-ganado-retro.jpg', cap:{fr:'Vapid Ganado (retro)', en:'Vapid Ganado (retro)'}},
+{img:'vehicule-squalo-bateau.jpg', cap:{fr:'Bateau Squalo', en:'Squalo boat'}},
+{img:'vehicule-planque-jason.jpg', cap:{fr:'Planque de Jason', en:"Jason's safehouse"}},
+{img:'vehicule-atelier-rideout-customs.jpg', cap:{fr:'Rideout Customs', en:'Rideout Customs'}},
+{img:'arme-revolver-hawk-little-morgan.jpg', cap:{fr:'Hawk & Little Morgan', en:'Hawk & Little Morgan'}},
+{img:'arme-variantes-personnalisees.jpg', cap:{fr:'Armes personnalisees', en:'Personalized weapons'}},
+{img:'tenue-style-vice-city-01.jpg', cap:{fr:'Style Vice City', en:'Vice City style'}},
+{img:'tenue-style-vice-city-02.jpg', cap:{fr:'Chemise Vice City', en:'Vice City shirt'}},
+{img:'tenue-style-vice-city-03.jpg', cap:{fr:'Look Vice City', en:'Vice City look'}},
+{img:'tenue-saras-salon.jpg', cap:{fr:"Salon de Sara", en:"Sara's Salon"}}
+];
+
+function renderMap(){
+const rows = LOCATIONS.map(l => `
+<div class="lb-row" style="border-bottom:1px solid var(--line);flex-direction:column;align-items:stretch;gap:10px;padding:14px 0;">
+<img src="/images/${l.img}" loading="lazy" style="width:100%;max-height:320px;object-fit:cover;border-radius:12px;" onerror="this.style.display='none'"/>
+<div><strong style="font-size:17px;">${esc(l.name[state.lang])}</strong><div style="color:var(--text-dim);font-size:14px;margin-top:4px;">${esc(l.desc[state.lang])}</div></div>
+</div>
+`).join('');
+const showcase = SHOWCASE.map(s => `
+<div class="g-card">
+<img src="/images/${s.img}" loading="lazy" onerror="this.style.opacity=0.2"/>
+<div class="body"><div class="cap">${esc(s.cap[state.lang])}</div></div>
+</div>
+`).join('');
+return `
+<div class="panel">
+<h2>${esc(t('mapTitle'))}</h2>
+<p class="sub">${esc(t('mapSub'))}</p>
+${rows}
+</div>
+<div class="panel">
+<h2>${esc(t('showcaseTitle'))}</h2>
+<p class="sub">${esc(t('showcaseSub'))}</p>
+<div class="gallery-grid">${showcase}</div>
+</div>`;
+}
 function renderAI(){ 
   const msgs = state.aiMessages.length ? state.aiMessages.map(m => `
     <div class="ai-msg ${m.role}">
