@@ -213,7 +213,7 @@ const I18N = {
     footerText: "Application communautaire non-officielle. Non affiliée à Rockstar Games ni à Take-Two Interactive.",
     close: "Fermer", loading: "Chargement...", empty: "Rien à afficher pour le moment.",
     typing: "Ray réfléchit...",
-    scoreEarned: "points gagnés", correct: "Bonne réponse !", incorrect: "Mauvaise réponse.", teaserTitle: "Bande-annonce officielle", teaserSub: "Trailer publie par Rockstar Games sur YouTube", quizTimeLeft: "Temps restant", quizBestTime: "Meilleur temps", quizYourTime: "Ton temps", quizNewRecord: "Nouveau record !",
+    scoreEarned: "points gagnés", correct: "Bonne réponse !", incorrect: "Mauvaise réponse.", teaserTitle: "Bande-annonce officielle", teaserSub: "Trailer publie par Rockstar Games sur YouTube", quizTimeLeft: "Temps restant", quizBestTime: "Meilleur temps", quizYourTime: "Ton temps", quizNewRecord: "Nouveau record !", preorderTitle: "Précommande officielle", preorderSub: "Précommandez GTA 6 directement sur le site officiel de Rockstar Games.", preorderBtn: "Précommander sur Rockstar Games",
     facts: [
       {q:"Date de sortie", a:"19 novembre 2026, sur PS5 et Xbox Series X|S."},
       {q:"Studio", a:"Développé par Rockstar Games, édité par Take-Two Interactive."},
@@ -247,7 +247,7 @@ en: {
     footerText: "Unofficial fan community app. Not affiliated with Rockstar Games or Take-Two Interactive.",
     close: "Close", loading: "Loading...", empty: "Nothing to show yet.",
     typing: "Ray is thinking...",
-    scoreEarned: "points earned", correct: "Correct!", incorrect: "Wrong answer.", teaserTitle: "Official trailer", teaserSub: "Trailer published by Rockstar Games on YouTube", quizTimeLeft: "Time left", quizBestTime: "Best time", quizYourTime: "Your time", quizNewRecord: "New record!",
+    scoreEarned: "points earned", correct: "Correct!", incorrect: "Wrong answer.", teaserTitle: "Official trailer", teaserSub: "Trailer published by Rockstar Games on YouTube", quizTimeLeft: "Time left", quizBestTime: "Best time", quizYourTime: "Your time", quizNewRecord: "New record!", preorderTitle: "Official Pre-order", preorderSub: "Pre-order GTA 6 directly on the official Rockstar Games website.", preorderBtn: "Pre-order on Rockstar Games",
     facts: [
       {q:"Release date", a:"November 19, 2026, on PS5 and Xbox Series X|S."},
       {q:"Studio", a:"Developed by Rockstar Games, published by Take-Two Interactive."},
@@ -903,6 +903,11 @@ function renderHome(){
                                           <iframe src="https://www.youtube.com/embed/QdBZY2fkU-0" title="GTA 6 Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
                                                   </div>
                                                         </div>
+  <div class="panel">
+    <h2>${esc(t('preorderTitle'))}</h2>
+    <p class="sub">${esc(t('preorderSub'))}</p>
+    <a href="https://www.rockstargames.com/VI/editions" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="display:inline-block;margin-top:12px;text-decoration:none;">${esc(t('preorderBtn'))}</a>
+  </div>
   <div class="panel">
     <h2>${esc(t('infoTitle'))}</h2>
     <p class="sub">${esc(t('infoSub'))}</p>
