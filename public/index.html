@@ -192,7 +192,7 @@ const I18N = {
     tag: "Application non-officielle de fans",
     heroTitle1: "LA COMMUNAUTÉ", heroTitleAccent: "GTA 6",
     heroDesc: "Classement mondial, chat en direct, quiz, galerie de tenues & véhicules, et un assistant IA dédié. Le point de ralliement des fans avant le 19 novembre 2026.",
-    statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie",
+    statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie", statHours: "Heures", statMinutes: "Minutes", statSeconds: "Secondes",
     navHome: "Accueil", navRank: "Classement", navChat: "Chat", navQuiz: "Quiz", navGallery: "Galerie", navAI: "Assistant IA", navMap: "Lieux",
     loginBtn: "Se connecter", createAccount: "Créer un compte",
     infoTitle: "Le point sur GTA 6", infoSub: "Infos officielles confirmées par Rockstar / Take-Two",
@@ -226,7 +226,7 @@ en: {
     tag: "Unofficial fan-made application",
     heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
     heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
-    statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release",
+    statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release", statHours: "Hours", statMinutes: "Minutes", statSeconds: "Seconds",
     navHome: "Home", navRank: "Leaderboard", navChat: "Chat", navQuiz: "Quiz", navGallery: "Gallery", navAI: "AI Assistant", navMap: "Locations",
     loginBtn: "Log in", createAccount: "Create account",
     infoTitle: "GTA 6 rundown", infoSub: "Officially confirmed by Rockstar / Take-Two",
@@ -845,8 +845,25 @@ function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 
 function releaseCountdown(){
   const target = new Date('2026-11-19T00:00:00Z').getTime();
-  const diff = target - Date.now();
-  return Math.max(0, Math.ceil(diff / 86400000));
+  let diff = target - Date.now();
+  if (diff < 0) diff = 0;
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  return { days, hours, minutes, seconds };
+}
+
+function updateCountdownDisplay(){
+  const cd = releaseCountdown();
+  const elD = document.getElementById('cdDays');
+  const elH = document.getElementById('cdHours');
+  const elM = document.getElementById('cdMinutes');
+  const elS = document.getElementById('cdSeconds');
+  if (elD) elD.textContent = cd.days;
+  if (elH) elH.textContent = String(cd.hours).padStart(2,'0');
+  if (elM) elM.textContent = String(cd.minutes).padStart(2,'0');
+  if (elS) elS.textContent = String(cd.seconds).padStart(2,'0');
 }
 
 function renderHeader(){
@@ -885,7 +902,7 @@ function renderTabs(){
 }
 
 function renderHome(){
-  const days = releaseCountdown();
+  const cd = releaseCountdown();
   return `
   <div class="hero">
     <h1>${esc(t('heroTitle1'))} <span class="accent">${esc(t('heroTitleAccent'))}</span></h1>
@@ -893,7 +910,10 @@ function renderHome(){
     <div class="hero-stats">
       <div><div class="num">${state.leaderboard.length || '—'}</div><div class="lbl">${esc(t('statMembers'))}</div></div>
       <div><div class="num">${state.chatMessages.length || '—'}</div><div class="lbl">${esc(t('statMsgs'))}</div></div>
-      <div><div class="num">${days}</div><div class="lbl">${esc(t('statDays'))}</div></div>
+      <div><div class="num" id="cdDays">${cd.days}</div><div class="lbl">${esc(t('statDays'))}</div></div>
+      <div><div class="num" id="cdHours">${String(cd.hours).padStart(2,'0')}</div><div class="lbl">${esc(t('statHours'))}</div></div>
+      <div><div class="num" id="cdMinutes">${String(cd.minutes).padStart(2,'0')}</div><div class="lbl">${esc(t('statMinutes'))}</div></div>
+      <div><div class="num" id="cdSeconds">${String(cd.seconds).padStart(2,'0')}</div><div class="lbl">${esc(t('statSeconds'))}</div></div>
     </div>
   </div>
         <div class="panel">
@@ -1217,6 +1237,7 @@ loadChat();
 loadGallery();
 setInterval(() => { if (state.tab==='chat') loadChat(); }, 5000);
 setInterval(() => { if (state.tab==='rank') loadLeaderboard(); }, 15000);
+  setInterval(updateCountdownDisplay, 1000);
 </script>
 </body>
 </html>
