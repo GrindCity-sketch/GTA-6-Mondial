@@ -672,8 +672,11 @@ try {
   if (saved && saved.pseudo && saved.token) state.user = saved;
 } catch {}
 
-function t(key){ return I18N[state.lang][key]; }
-function setLang(l){ state.lang = l; localStorage.setItem('g6_lang', l); render(); }
+const LANGS = [
+  {code:'fr', name:'Français'}, {code:'en', name:'English'}, {code:'es', name:'Español'}, {code:'pt', name:'Português'}, {code:'de', name:'Deutsch'}, {code:'it', name:'Italiano'}, {code:'ru', name:'Русский'}, {code:'ar', name:'العربية'}, {code:'zh', name:'中文'}, {code:'ja', name:'日本語'}, {code:'ko', name:'한국어'}, {code:'hi', name:'हिन्दी'}
+];
+function t(key){ return (I18N[state.lang] && I18N[state.lang][key] !== undefined) ? I18N[state.lang][key] : I18N.en[key]; }
+function setLang(l){ state.lang = l; localStorage.setItem('g6_lang', l); document.documentElement.lang = l; document.documentElement.dir = (l==='ar') ? 'rtl' : 'ltr'; render(); }
 function showToast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toastMsg=null; render(); }, 2600); }
 
 async function api(path, opts){
@@ -803,11 +806,11 @@ function startQuiz(){
       state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true; state.quizStartTime = Date.now();
       render();
       api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lang: state.lang})}).then(d => {
-              state.quizData = (d && Array.isArray(d.questions) && d.questions.length) ? d.questions : QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
+              state.quizData = (d && Array.isArray(d.questions) && d.questions.length) ? d.questions : QUIZ.map(q => ({question: (q[state.lang]||q.en).q, choices: (q[state.lang]||q.en).opts, answerIndex: q.correct, note: 'officiel'}));
               state.quizLoading = false;
               render(); startQuestionTimer();
       }).catch(() => {
-              state.quizData = QUIZ.map(q => ({question: q[state.lang].q, choices: q[state.lang].opts, answerIndex: q.correct, note: 'officiel'}));
+              state.quizData = QUIZ.map(q => ({question: (q[state.lang]||q.en).q, choices: (q[state.lang]||q.en).opts, answerIndex: q.correct, note: 'officiel'}));
               state.quizLoading = false;
               render(); startQuestionTimer();
       });
@@ -851,9 +854,10 @@ function renderHeader(){
   <header class="top">
     <div class="logo"><span class="g6">GTA6</span><span class="hub">HUB</span><small>${esc(t('tag'))}</small></div>
     <div class="top-actions">
-      <div class="lang-toggle">
-        <button data-lang="fr" class="${state.lang==='fr'?'active':''}">FR</button>
-        <button data-lang="en" class="${state.lang==='en'?'active':''}">EN</button>
+            <div class="lang-toggle">
+        <select id="langSelect" style="background:var(--bg-panel);color:var(--text);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;">
+          ${LANGS.map(function(lg){ return '<option value="'+lg.code+'"'+(state.lang===lg.code?' selected':'')+'>'+esc(lg.name)+'</option>'; }).join('')}
+        </select>
       </div>
       ${state.user ? `
         <div class="account-chip" id="accountChip">
@@ -1050,13 +1054,13 @@ function renderMap(){
 const rows = LOCATIONS.map(l => `
 <div class="lb-row" style="border-bottom:1px solid var(--line);flex-direction:column;align-items:stretch;gap:10px;padding:14px 0;">
 <img src="/images/${l.img}" loading="lazy" style="width:100%;max-height:320px;object-fit:cover;border-radius:12px;" onerror="this.style.display='none'"/>
-<div><strong style="font-size:17px;">${esc(l.name[state.lang])}</strong><div style="color:var(--text-dim);font-size:14px;margin-top:4px;">${esc(l.desc[state.lang])}</div></div>
+<div><strong style="font-size:17px;">${esc((l.name[state.lang]||l.name.en))}</strong><div style="color:var(--text-dim);font-size:14px;margin-top:4px;">${esc((l.desc[state.lang]||l.desc.en))}</div></div>
 </div>
 `).join('');
 const showcase = SHOWCASE.map(s => `
 <div class="g-card">
 <img src="/images/${s.img}" loading="lazy" onerror="this.style.opacity=0.2"/>
-<div class="body"><div class="cap">${esc(s.cap[state.lang])}</div></div>
+<div class="body"><div class="cap">${esc((s.cap[state.lang]||s.cap.en))}</div></div>
 </div>
 `).join('');
 return `
@@ -1142,6 +1146,7 @@ function render(){
 
 function attachEvents(){
   document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+    const langSelect = document.getElementById('langSelect'); if (langSelect) langSelect.onchange = () => setLang(langSelect.value);
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; state.quizFinished=false; render();
     if (b.dataset.tab==='rank') loadLeaderboard();
     if (b.dataset.tab==='chat') loadChat();
