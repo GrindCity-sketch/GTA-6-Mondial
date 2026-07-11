@@ -1172,7 +1172,7 @@ function render(){
     ${renderHeader()}
     ${renderTabs()}
     ${body}
-    <footer>${esc(t('footerText'))}<br/>GTA6 HUB — 2026</footer>
+    <footer>${esc(t('footerText'))}<br/>GTA6 HUB — 2026<div style="margin-top:10px;display:flex;gap:14px;justify-content:center;"><a href="https://x.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">X</a><a href="https://instagram.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Instagram</a><a href="https://www.youtube.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">YouTube</a><a href="https://www.facebook.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Facebook</a></div></footer>
     ${renderAuthModal()}
     ${state.toastMsg ? `<div class="toast">${esc(state.toastMsg)}</div>` : ''}
   `;
