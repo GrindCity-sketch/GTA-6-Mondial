@@ -189,7 +189,7 @@
 /* ============ I18N ============ */
 const I18N = {
   fr: {
-    tag: "Application non-officielle de fans", ageGateTitle: "Vérification d’âge", ageGateText: "GTA 6 est classé PEGI 18 / ESRB Mature (violence, langage grossier, thèmes sexuels, usage de drogue). Vous devez avoir 18 ans ou plus pour accéder à ce site.", ageGateConfirm: "J’ai 18 ans ou plus", ageGateLeave: "Quitter", maturityBadge: "Contenu pour adultes — PEGI 18 / ESRB Mature",
+    tag: "Application non-officielle de fans", ageGateTitle: "Vérification d’âge", ageGateText: "GTA 6 est classé PEGI 18 / ESRB Mature (violence, langage grossier, thèmes sexuels, usage de drogue). Vous devez avoir 18 ans ou plus pour accéder à ce site.", ageGateConfirm: "J’ai 18 ans ou plus", ageGateLeave: "Quitter", maturityBadge: "Contenu pour adultes — PEGI 18 / ESRB Mature", shareFallbackMsg: "Lien de partage ouvert dans un nouvel onglet",
     heroTitle1: "LA COMMUNAUTÉ", heroTitleAccent: "GTA 6",
     heroDesc: "Classement mondial, chat en direct, quiz, galerie de tenues & véhicules, et un assistant IA dédié. Le point de ralliement des fans avant le 19 novembre 2026.",
     statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie", statHours: "Heures", statMinutes: "Minutes", statSeconds: "Secondes",
@@ -223,7 +223,7 @@ const I18N = {
     ]
   },
 en: {
-    tag: "Unofficial fan-made application", ageGateTitle: "Age Verification", ageGateText: "GTA 6 is rated PEGI 18 / ESRB Mature (violence, strong language, sexual themes, drug use). You must be 18 or older to access this site.", ageGateConfirm: "I am 18 or older", ageGateLeave: "Leave", maturityBadge: "Adult content — PEGI 18 / ESRB Mature",
+    tag: "Unofficial fan-made application", ageGateTitle: "Age Verification", ageGateText: "GTA 6 is rated PEGI 18 / ESRB Mature (violence, strong language, sexual themes, drug use). You must be 18 or older to access this site.", ageGateConfirm: "I am 18 or older", ageGateLeave: "Leave", maturityBadge: "Adult content — PEGI 18 / ESRB Mature", shareFallbackMsg: "Share link opened in a new tab",
     heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
     heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
     statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release", statHours: "Hours", statMinutes: "Minutes", statSeconds: "Seconds",
@@ -834,7 +834,7 @@ if (state.quizIndex + 1 >= state.quizData.length){          clearQuizTimer();
   state.quizAnswered = null; startQuestionTimer();
   render();
 }
-function restartQuiz(){ state.quizFinished = false; startQuiz(); } function shareScore(){ const msg = "J'ai obtenu " + state.quizScore + "/5 au quiz GTA6 HUB ! " + window.location.href; if (navigator.share) { navigator.share({text: msg}); } else { window.open("https://x.com/intent/tweet?text=" + encodeURIComponent(msg), "_blank"); } }
+function restartQuiz(){ state.quizFinished = false; startQuiz(); } function shareScore(){ const msg = "J'ai obtenu " + state.quizScore + "/5 au quiz GTA6 HUB ! " + window.location.href; const fallback = function(){ window.open("https://x.com/intent/tweet?text=" + encodeURIComponent(msg), "_blank"); showToast(t("shareFallbackMsg")); }; if (navigator.share) { navigator.share({text: msg}).catch(fallback); } else { fallback(); } }
 
 /* ============ RENDER ============ */
 function el(html){ const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
