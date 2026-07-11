@@ -185,7 +185,71 @@
 
 <div id="app"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+const SUPABASE_URL = 'https://thjjdwsohwtcxudmdsxx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_PFTq8owsFjMDzhZsHXnuig_PWg-btYL';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function authToken(){
+  try {
+    const { data } = await supabase.auth.getSession();
+    return (data && data.session) ? data.session.access_token : null;
+  } catch { return null; }
+}
+
+async function ensurePlayerRow(authUser){
+  const { data: existing } = await supabase.from('players').select('*').eq('auth_user_id', authUser.id).maybeSingle();
+  if (existing) return existing;
+  let pending = null;
+  try { pending = JSON.parse(localStorage.getItem('g6_pending_profile') || 'null'); } catch {}
+  const username = (pending && pending.username) || ('Joueur' + Math.floor(Math.random()*100000));
+  const region = (pending && pending.region) || 'EU-West';
+  const { data: created, error } = await supabase.from('players').insert({ auth_user_id: authUser.id, username, region }).select('*').single();
+  localStorage.removeItem('g6_pending_profile');
+  if (error) throw error;
+  return created;
+}
+
+function playerToUser(p){
+  return { id: p.id, pseudo: p.username, score: p.hustle_score || 0, bestTime: p.best_quiz_time || null, quizzesTaken: p.quizzes_taken || 0, country: p.region || '??' };
+}
+
+let __chatRealtimeStarted = false;
+function startChatRealtime(){
+  if (__chatRealtimeStarted) return;
+  __chatRealtimeStarted = true;
+  supabase.channel('public:chat_messages')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+      const m = payload.new;
+      if ((m.room || 'global') !== 'global') return;
+      state.chatMessages.push({ pseudo: m.username, country: m.country, text: m.content });
+      state.chatMessages = state.chatMessages.slice(-200);
+      if (state.tab === 'chat') render();
+    })
+    .subscribe();
+}
+
+async function restoreSupabaseSession(){
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data && data.session) {
+      const player = await ensurePlayerRow(data.session.user);
+      state.user = playerToUser(player);
+      render();
+    }
+  } catch (e) {}
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') { state.user = null; render(); return; }
+    if (session && session.user && !state.user) {
+      try {
+        const player = await ensurePlayerRow(session.user);
+        state.user = playerToUser(player);
+        render();
+      } catch (e) {}
+    }
+  });
+}
 /* ============ I18N ============ */
 const I18N = {
   fr: {
@@ -644,9 +708,10 @@ const QUIZ = [
 
 /* ============ STATE ============ */
 const state = {
-lang: localStorage.getItem('g6_lang') || (navigator.language.startsWith('fr') ? 'fr' : 'en'), theme: localStorage.getItem('g6_theme') || 'dark', user: null, tab: 'home',
+  lang: localStorage.getItem('g6_lang') || (navigator.language.startsWith('fr') ? 'fr' : 'en'), theme: localStorage.getItem('g6_theme') || 'dark', user: null, tab: 'home',
   showAuth: false,
   authMode: 'login',
+  authError: null,
   leaderboard: [],
   chatMessages: [],
   galleryItems: [],
@@ -654,21 +719,19 @@ lang: localStorage.getItem('g6_lang') || (navigator.language.startsWith('fr') ? 
   quizScore: 0,
   quizAnswered: null,
   quizActive: false,
-        quizData: null,
-        quizLoading: false,
-        quizStartTime: null,
-        quizTimeLeft: null,
-        quizLastTime: null,
+  quizData: null,
+  quizLoading: false,
+  quizStartTime: null,
+  quizTimeLeft: null,
+  quizLastTime: null,
+  quizSessionId: null,
+  quizAnswers: [],
+  quizCorrectIndex: null,
+  quizChecking: false,
   aiMessages: [],
   aiTyping: false,
   toastMsg: null
 };
-
-// restore session
-try {
-  const saved = JSON.parse(localStorage.getItem('g6_user') || 'null');
-  if (saved && saved.pseudo && saved.token) state.user = saved;
-} catch {}
 
 const LANGS = [
   {code:'fr', name:'Français'}, {code:'en', name:'English'}, {code:'es', name:'Español'}, {code:'pt', name:'Português'}, {code:'de', name:'Deutsch'}, {code:'it', name:'Italiano'}, {code:'ru', name:'Русский'}, {code:'ar', name:'العربية'}, {code:'zh', name:'中文'}, {code:'ja', name:'日本語'}, {code:'ko', name:'한국어'}, {code:'hi', name:'हिन्दी'}
@@ -686,17 +749,37 @@ async function api(path, opts){
 }
 
 /* ============ AUTH ============ */
-async function doAuth(action, pseudo, pin, country){
+async function doAuth(action, payload){
   try{
-    const data = await api('auth', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action, pseudo, pin, country})
-    });
-    state.user = data.user;
-    localStorage.setItem('g6_user', JSON.stringify(data.user));
+    if (action === 'register') {
+      const { email, password, username, country } = payload;
+      if (!username || !/^[a-zA-Z0-9_-]{3,18}$/.test(username)) throw new Error(state.lang==='fr' ? 'Pseudo invalide (3-18 caractères, lettres/chiffres/_/-)' : 'Invalid username (3-18 chars, letters/digits/_/-)');
+      if (!password || password.length < 6) throw new Error(state.lang==='fr' ? 'Mot de passe trop court (6 caractères min)' : 'Password too short (min 6 characters)');
+      localStorage.setItem('g6_pending_profile', JSON.stringify({ username, region: country || 'EU-West' }));
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.session) {
+        const player = await ensurePlayerRow(data.session.user);
+        state.user = playerToUser(player);
+        state.showAuth = false;
+        showToast(state.lang==='fr' ? 'Bienvenue ' + player.username + ' !' : 'Welcome ' + player.username + '!');
+        loadLeaderboard();
+      } else {
+        state.showAuth = false;
+        showToast(state.lang==='fr' ? 'Compte créé ! Vérifie tes emails pour confirmer, puis connecte-toi.' : 'Account created! Check your email to confirm, then log in.');
+      }
+      render();
+      return;
+    }
+
+    const { email, password } = payload;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    const player = await ensurePlayerRow(data.session.user);
+    if (player.is_banned) { await supabase.auth.signOut(); throw new Error(state.lang==='fr' ? 'Ce compte a été suspendu.' : 'This account has been suspended.'); }
+    state.user = playerToUser(player);
     state.showAuth = false;
-    showToast(state.lang==='fr' ? 'Bienvenue ' + data.user.pseudo + ' !' : 'Welcome ' + data.user.pseudo + '!');
+    showToast(state.lang==='fr' ? 'Bienvenue ' + player.username + ' !' : 'Welcome ' + player.username + '!');
     render();
     loadLeaderboard();
   } catch(e){
@@ -705,17 +788,27 @@ async function doAuth(action, pseudo, pin, country){
   }
 }
 function logout(){
+  supabase.auth.signOut();
   state.user = null;
-  localStorage.removeItem('g6_user');
   render();
 }
 
 /* ============ DATA LOADERS ============ */
 async function loadLeaderboard(){
-  try{ const d = await api('leaderboard'); state.leaderboard = d.leaderboard || []; render(); }catch(e){}
+  try{
+    const { data, error } = await supabase
+      .from('players')
+      .select('username, region, hustle_score, best_quiz_time')
+      .eq('is_banned', false)
+      .order('hustle_score', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    state.leaderboard = (data || []).map(p => ({ pseudo: p.username, country: p.region || '??', score: p.hustle_score || 0, bestTime: p.best_quiz_time || null }));
+    render();
+  }catch(e){}
 }
 async function loadChat(){
-  try{ const d = await api('chat'); state.chatMessages = d.messages || []; render(); }catch(e){}
+  try{ const d = await api('chat'); state.chatMessages = (d.messages || []).map(m => ({ pseudo: m.username, country: m.country, text: m.content })); render(); }catch(e){}
 }
 async function loadGallery(){
   try{ const d = await api('gallery'); state.galleryItems = d.items || []; render(); }catch(e){}
@@ -725,17 +818,16 @@ async function sendChat(text){
   if (!state.user){ state.showAuth = true; state.authMode='login'; render(); return; }
   if (!text.trim()) return;
   try{
+    const token = await authToken();
     await api('chat', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, text})});
-    await loadChat();
+      body: JSON.stringify({ token, text })});
   } catch(e){ showToast(e.message); }
 }
-
 async function postGallery(imageUrl, category, caption){
   if (!state.user){ state.showAuth = true; render(); return; }
   try{
     await api('gallery', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, imageUrl, category, caption})});
+      body: JSON.stringify({pseudo: state.user.pseudo, token: await authToken(), imageUrl, category, caption})});
     await loadGallery();
     showToast(state.lang==='fr' ? 'Publié !' : 'Posted!');
   } catch(e){ showToast(e.message); }
@@ -745,7 +837,7 @@ async function likeGallery(id){
   if (!state.user){ state.showAuth = true; render(); return; }
   try{
     await api('gallery', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'like', id, pseudo: state.user.pseudo, token: state.user.token})});
+      body: JSON.stringify({action:'like', id, pseudo: state.user.pseudo, token: await authToken()})});
     await loadGallery();
   } catch(e){ showToast(e.message); }
 }
@@ -754,22 +846,25 @@ async function reportGallery(id){
   if (!state.user){ state.showAuth = true; render(); return; }
   try{
     await api('gallery', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'report', id, pseudo: state.user.pseudo, token: state.user.token})});
+      body: JSON.stringify({action:'report', id, pseudo: state.user.pseudo, token: await authToken()})});
     showToast(t('reportSent'));
   } catch(e){ showToast(e.message); }
 }
 
-    async function submitQuizScore(points, time){
-  if (!state.user) return;
+    async function submitQuizScore(){
+  if (!state.quizSessionId) return;
   try{
-    const d = await api('leaderboard', {method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({pseudo: state.user.pseudo, token: state.user.token, points, time})});
-    state.user.score = d.score; if (d.bestTime) state.user.bestTime = d.bestTime;
-    localStorage.setItem('g6_user', JSON.stringify(state.user));
+    const token = await authToken();
+    const d = await api('quiz', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'submit', token, sessionId: state.quizSessionId, answers: state.quizAnswers, time: state.quizLastTime })});
+    if (state.user && d.player) {
+      state.user.score = d.player.hustle_score;
+      state.user.bestTime = d.player.best_quiz_time;
+      state.user.quizzesTaken = d.player.quizzes_taken;
+    }
     loadLeaderboard();
   } catch(e){}
 }
-
 async function sendAI(text){
   if (!text.trim()) return;
   state.aiMessages.push({role:'user', content:text});
@@ -810,37 +905,65 @@ async function sendAI(text){
               return m + ':' + (s < 10 ? '0' : '') + s;
       }
 function startQuiz(){
-      state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true; state.quizStartTime = Date.now();
-      render();
-      api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lang: state.lang})}).then(d => {
-              state.quizData = (d && Array.isArray(d.questions) && d.questions.length) ? d.questions : QUIZ.map(q => ({question: (q[state.lang]||q.en).q, choices: (q[state.lang]||q.en).opts, answerIndex: q.correct, note: 'officiel'}));
-              state.quizLoading = false;
-              render(); startQuestionTimer();
-      }).catch(() => {
-              state.quizData = QUIZ.map(q => ({question: (q[state.lang]||q.en).q, choices: (q[state.lang]||q.en).opts, answerIndex: q.correct, note: 'officiel'}));
-              state.quizLoading = false;
-              render(); startQuestionTimer();
-      });
+  state.quizActive = true; state.quizIndex = 0; state.quizScore = 0; state.quizAnswered = null; state.quizData = null; state.quizLoading = true; state.quizStartTime = Date.now();
+  state.quizSessionId = null; state.quizAnswers = []; state.quizCorrectIndex = null;
+  render();
+  (async () => {
+    try {
+      const token = await authToken();
+      const d = await api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: 'start', lang: state.lang, token })});
+      state.quizSessionId = d.sessionId;
+      state.quizData = d.questions;
+      state.quizLoading = false;
+      render(); startQuestionTimer();
+    } catch(e) {
+      state.quizData = QUIZ.map(q => ({ question: (q[state.lang]||q.en).q, choices: (q[state.lang]||q.en).opts, note: 'officiel', answerIndex: q.correct }));
+      state.quizSessionId = null;
+      state.quizLoading = false;
+      render(); startQuestionTimer();
+    }
+  })();
 }
 function answerQuiz(idx){
-      if (state.quizAnswered !== null || !state.quizData) return;
-      state.quizAnswered = idx; clearQuizTimer();
-      if (idx === state.quizData[state.quizIndex].answerIndex) state.quizScore++;
+  if (state.quizAnswered !== null || !state.quizData || state.quizChecking) return;
+  state.quizAnswers[state.quizIndex] = idx;
+  clearQuizTimer();
+  if (!state.quizSessionId) {
+    const ai = state.quizData[state.quizIndex].answerIndex;
+    state.quizAnswered = idx;
+    state.quizCorrectIndex = (ai !== undefined && ai !== null) ? ai : idx;
+    if (ai === idx) state.quizScore++;
+    render();
+    return;
+  }
+  state.quizChecking = true; render();
+  api('quiz', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: 'check', sessionId: state.quizSessionId, index: state.quizIndex, choice: idx })})
+    .then(d => {
+      state.quizChecking = false;
+      state.quizAnswered = idx;
+      state.quizCorrectIndex = d.correctIndex;
+      if (d.correct) state.quizScore++;
       render();
+    })
+    .catch(() => {
+      state.quizChecking = false;
+      state.quizAnswered = idx;
+      state.quizCorrectIndex = idx;
+      render();
+    });
 }
 function nextQuiz(){
 if (state.quizIndex + 1 >= state.quizData.length){          clearQuizTimer();
           const elapsed = Math.round((Date.now() - (state.quizStartTime || Date.now())) / 1000);
           state.quizLastTime = elapsed;
-    const pts = state.quizScore * 15;
-          submitQuizScore(pts, elapsed);
+    submitQuizScore();
     state.quizActive = false;
     state.quizFinished = true;
     render();
     return;
   }
   state.quizIndex++;
-  state.quizAnswered = null; startQuestionTimer();
+  state.quizAnswered = null; state.quizCorrectIndex = null; startQuestionTimer();
   render();
 }
 function restartQuiz(){ state.quizFinished = false; startQuiz(); } function shareScore(){ const msg = "J'ai obtenu " + state.quizScore + "/5 au quiz GTA6 HUB ! " + window.location.href; const fallback = function(){ window.open("https://x.com/intent/tweet?text=" + encodeURIComponent(msg), "_blank"); showToast(t("shareFallbackMsg")); }; if (navigator.share) { navigator.share({text: msg}).catch(fallback); } else { fallback(); } }
@@ -1038,7 +1161,7 @@ function renderQuiz(){
                             ${data.choices.map((opt, i) => {
                                       let cls = 'quiz-opt';
                                       if (answered !== null){
-                                                  if (i === data.answerIndex) cls += ' correct';
+                                                  if (i === state.quizCorrectIndex) cls += ' correct';
                                                   else if (i === answered) cls += ' wrong';
                                       }
                                       return `<button class="${cls}" data-idx="${i}" ${answered!==null?'disabled':''}>${esc(opt)}</button>`;
@@ -1163,8 +1286,9 @@ function renderAuthModal(){
         <button data-mode="login" class="${mode==='login'?'active':''}">${esc(t('loginBtn'))}</button>
         <button data-mode="register" class="${mode==='register'?'active':''}">${esc(t('createAccount'))}</button>
       </div>
-      <div class="field"><label>${esc(t('loginPseudo'))}</label><input id="authPseudo" maxlength="18"/></div>
-      <div class="field"><label>${esc(t('loginPin'))}</label><input id="authPin" type="password" maxlength="6" inputmode="numeric"/></div>
+      ${mode==='register' ? `<div class="field"><label>${esc(t('loginPseudo'))}</label><input id="authUsername" maxlength="18"/></div>` : ''}
+      <div class="field"><label>Email</label><input id="authEmail" type="email" maxlength="200"/></div>
+      <div class="field"><label>${state.lang==='fr'?'Mot de passe':'Password'}</label><input id="authPassword" type="password" maxlength="72"/></div>
       ${mode==='register' ? `<div class="field"><label>${esc(t('loginCountry'))}</label><input id="authCountry" maxlength="2" placeholder="FR"/></div>` : ''}
       ${state.authError ? `<div class="error-msg">${esc(state.authError)}</div>` : ''}
       <button class="btn btn-primary" id="authSubmit" style="width:100%;">${mode==='login' ? esc(t('loginSubmit')) : esc(t('registerSubmit'))}</button>
@@ -1220,13 +1344,20 @@ function attachEvents(){
 
   const authSubmit = document.getElementById('authSubmit');
   if (authSubmit) authSubmit.onclick = () => {
-    const pseudo = document.getElementById('authPseudo').value.trim();
-    const pin = document.getElementById('authPin').value.trim();
-    const countryEl = document.getElementById('authCountry');
-    const country = countryEl ? countryEl.value.trim().toUpperCase() : undefined;
-    doAuth(state.authMode, pseudo, pin, country);
+    const emailEl = document.getElementById('authEmail');
+    const passwordEl = document.getElementById('authPassword');
+    const email = emailEl ? emailEl.value.trim() : '';
+    const password = passwordEl ? passwordEl.value : '';
+    if (state.authMode === 'register') {
+      const usernameEl = document.getElementById('authUsername');
+      const countryEl = document.getElementById('authCountry');
+      const username = usernameEl ? usernameEl.value.trim() : '';
+      const country = countryEl ? countryEl.value.trim().toUpperCase() : undefined;
+      doAuth('register', { email, password, username, country });
+    } else {
+      doAuth('login', { email, password });
+    }
   };
-
   const accountChip = document.getElementById('accountChip');
   if (accountChip) accountChip.onclick = () => { if (confirm(state.lang==='fr'?'Se déconnecter ?':'Log out?')) logout(); };
 
@@ -1267,7 +1398,9 @@ render();
 loadLeaderboard();
 loadChat();
 loadGallery();
-setInterval(() => { if (state.tab==='chat') loadChat(); }, 5000);
+startChatRealtime();
+restoreSupabaseSession();
+setInterval(() => { if (state.tab==='chat') loadChat(); }, 15000);
 setInterval(() => { if (state.tab==='rank') loadLeaderboard(); }, 15000);
   setInterval(updateCountdownDisplay, 1000); document.documentElement.setAttribute('data-theme', state.theme); if (!localStorage.getItem('g6_age_verified')) { showAgeGate(); }
 </script>
