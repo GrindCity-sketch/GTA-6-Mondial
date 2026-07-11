@@ -4,6 +4,7 @@
   "description": "Application communautaire non-officielle dédiée à GTA 6",
   "private": true,
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.1.0",
+    "@supabase/supabase-js": "^2.45.4"
   }
 }
