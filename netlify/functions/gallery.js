@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { store, json, options } = require('./_store');
+const { adminClient, getPlayerFromToken, looksLikeSpam } = require('./_supabase');
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return options();
@@ -19,11 +20,13 @@ exports.handler = async (event) => {
     } catch {
       return json(400, { error: 'Corps de requête invalide' });
     }
-    const { action, pseudo, token, imageUrl, category, caption, id } = body;
+    const { action, token, imageUrl, category, caption, id } = body;
 
-    const users = store('users');
-    const user = await users.get((pseudo || '').toLowerCase(), { type: 'json' });
-    if (!user || user.token !== token) return json(401, { error: 'Non autorisé' });
+    let supabase;
+    try { supabase = adminClient(); } catch { return json(500, { error: 'Supabase non configuré côté serveur.' }); }
+    const player = await getPlayerFromToken(supabase, token);
+    if (!player) return json(401, { error: 'Non autorisé' });
+    const pseudo = player.username;
 
     if (action === 'like') {
       const item = await gallery.get(id, { type: 'json' });
@@ -54,6 +57,7 @@ exports.handler = async (event) => {
     } catch {}
     if (!validImage) return json(400, { error: "L'URL doit être une image en https (jpg, png, gif, webp, avif)" });
     if (!['tenue', 'vehicule'].includes(category)) return json(400, { error: 'Catégorie invalide' });
+    if (caption && looksLikeSpam(caption)) return json(400, { error: 'Légende bloquée (détectée comme spam)' });
 
     const itemId = crypto.randomBytes(8).toString('hex');
     const item = {
