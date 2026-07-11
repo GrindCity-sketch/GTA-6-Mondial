@@ -1,4 +1,5 @@
 const { json, options } = require('./_store');
+const { adminClient, checkRateLimit } = require('./_supabase');
 
 const SYSTEM_PROMPT = `Tu es "Ray", l'assistant IA officieux de GTA6 Hub, une application communautaire de fans dédiée à GTA 6.
 Règles :
@@ -17,6 +18,13 @@ exports.handler = async (event) => {
   if (!apiKey) {
     return json(500, { error: "Clé API non configurée côté serveur. Ajoute ANTHROPIC_API_KEY dans les variables d'environnement Netlify." });
   }
+
+  const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
+  try {
+    const supabase = adminClient();
+    const allowed = await checkRateLimit(supabase, `aichat:${ip}`, 15, 60);
+    if (!allowed) return json(429, { error: 'Trop de requêtes, réessaie dans une minute.' });
+  } catch (e) { /* if Supabase isn't configured yet, fail open so the assistant still works */ }
 
   let body;
   try {
