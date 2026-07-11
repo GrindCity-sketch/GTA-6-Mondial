@@ -189,7 +189,7 @@
 /* ============ I18N ============ */
 const I18N = {
   fr: {
-    tag: "Application non-officielle de fans",
+    tag: "Application non-officielle de fans", ageGateTitle: "Vérification d’âge", ageGateText: "GTA 6 est classé PEGI 18 / ESRB Mature (violence, langage grossier, thèmes sexuels, usage de drogue). Vous devez avoir 18 ans ou plus pour accéder à ce site.", ageGateConfirm: "J’ai 18 ans ou plus", ageGateLeave: "Quitter", maturityBadge: "Contenu pour adultes — PEGI 18 / ESRB Mature",
     heroTitle1: "LA COMMUNAUTÉ", heroTitleAccent: "GTA 6",
     heroDesc: "Classement mondial, chat en direct, quiz, galerie de tenues & véhicules, et un assistant IA dédié. Le point de ralliement des fans avant le 19 novembre 2026.",
     statMembers: "Membres", statMsgs: "Messages échangés", statDays: "Jours avant la sortie", statHours: "Heures", statMinutes: "Minutes", statSeconds: "Secondes",
@@ -223,7 +223,7 @@ const I18N = {
     ]
   },
 en: {
-    tag: "Unofficial fan-made application",
+    tag: "Unofficial fan-made application", ageGateTitle: "Age Verification", ageGateText: "GTA 6 is rated PEGI 18 / ESRB Mature (violence, strong language, sexual themes, drug use). You must be 18 or older to access this site.", ageGateConfirm: "I am 18 or older", ageGateLeave: "Leave", maturityBadge: "Adult content — PEGI 18 / ESRB Mature",
     heroTitle1: "THE GTA 6", heroTitleAccent: "COMMUNITY",
     heroDesc: "Global leaderboard, live chat, quizzes, outfit & vehicle gallery, and a dedicated AI assistant. The gathering point for fans before November 19, 2026.",
     statMembers: "Members", statMsgs: "Messages sent", statDays: "Days until release", statHours: "Hours", statMinutes: "Minutes", statSeconds: "Seconds",
@@ -674,7 +674,7 @@ const LANGS = [
   {code:'fr', name:'Français'}, {code:'en', name:'English'}, {code:'es', name:'Español'}, {code:'pt', name:'Português'}, {code:'de', name:'Deutsch'}, {code:'it', name:'Italiano'}, {code:'ru', name:'Русский'}, {code:'ar', name:'العربية'}, {code:'zh', name:'中文'}, {code:'ja', name:'日本語'}, {code:'ko', name:'한국어'}, {code:'hi', name:'हिन्दी'}
 ];
 function t(key){ return (I18N[state.lang] && I18N[state.lang][key] !== undefined) ? I18N[state.lang][key] : I18N.en[key]; }
-function setLang(l){ state.lang = l; localStorage.setItem('g6_lang', l); document.documentElement.lang = l; document.documentElement.dir = (l==='ar') ? 'rtl' : 'ltr'; render(); } function toggleTheme(){ state.theme = state.theme==='light' ? 'dark' : 'light'; localStorage.setItem('g6_theme', state.theme); document.documentElement.setAttribute('data-theme', state.theme); render(); }
+function setLang(l){ state.lang = l; localStorage.setItem('g6_lang', l); document.documentElement.lang = l; document.documentElement.dir = (l==='ar') ? 'rtl' : 'ltr'; render(); } function toggleTheme(){ state.theme = state.theme==='light' ? 'dark' : 'light'; localStorage.setItem('g6_theme', state.theme); document.documentElement.setAttribute('data-theme', state.theme); render(); } function showAgeGate(){ const div = document.createElement('div'); div.id = 'ageGate'; div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;'; div.innerHTML = '<div style="max-width:480px;background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:28px;text-align:center;"><div style="font-size:40px;margin-bottom:12px;">🔞</div><h2 style="margin:0 0 12px;color:var(--text);">'+esc(t('ageGateTitle'))+'</h2><p style="color:var(--text-dim);margin:0 0 20px;line-height:1.5;">'+esc(t('ageGateText'))+'</p><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"><button id="ageGateConfirmBtn" style="background:var(--magenta);color:#fff;border:none;border-radius:999px;padding:10px 20px;cursor:pointer;font-weight:700;">'+esc(t('ageGateConfirm'))+'</button><button id="ageGateLeaveBtn" style="background:transparent;color:var(--text-dim);border:1px solid var(--line);border-radius:999px;padding:10px 20px;cursor:pointer;">'+esc(t('ageGateLeave'))+'</button></div></div>'; document.body.appendChild(div); document.getElementById('ageGateConfirmBtn').onclick = function(){ localStorage.setItem('g6_age_verified','true'); div.remove(); }; document.getElementById('ageGateLeaveBtn').onclick = function(){ window.location.href = 'https://www.google.com'; }; }
 function showToast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toastMsg=null; render(); }, 2600); }
 
 async function api(path, opts){
@@ -1168,7 +1168,7 @@ function render(){
     ${renderHeader()}
     ${renderTabs()}
     ${body}
-    <footer>${esc(t('footerText'))}<br/>GTA6 HUB — 2026<div style="margin-top:10px;display:flex;gap:14px;justify-content:center;"><a href="https://x.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">X</a><a href="https://instagram.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Instagram</a><a href="https://www.youtube.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">YouTube</a><a href="https://www.facebook.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Facebook</a></div></footer>
+    <footer>${esc(t('footerText'))}<br/>GTA6 HUB — 2026<div style="margin-top:10px;display:flex;gap:14px;justify-content:center;"><a href="https://x.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">X</a><a href="https://instagram.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Instagram</a><a href="https://www.youtube.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">YouTube</a><a href="https://www.facebook.com/rockstargames" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Facebook</a></div><div style="margin-top:8px;font-size:11px;color:var(--text-dim);">${esc(t('maturityBadge'))}</div></footer>
     ${renderAuthModal()}
     ${state.toastMsg ? `<div class="toast">${esc(state.toastMsg)}</div>` : ''}
   `;
@@ -1249,7 +1249,7 @@ loadChat();
 loadGallery();
 setInterval(() => { if (state.tab==='chat') loadChat(); }, 5000);
 setInterval(() => { if (state.tab==='rank') loadLeaderboard(); }, 15000);
-  setInterval(updateCountdownDisplay, 1000); document.documentElement.setAttribute('data-theme', state.theme);
+  setInterval(updateCountdownDisplay, 1000); document.documentElement.setAttribute('data-theme', state.theme); if (!localStorage.getItem('g6_age_verified')) { showAgeGate(); }
 </script>
 </body>
 </html>
