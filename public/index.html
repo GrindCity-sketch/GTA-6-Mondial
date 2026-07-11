@@ -213,7 +213,7 @@ const I18N = {
     footerText: "Application communautaire non-officielle. Non affiliée à Rockstar Games ni à Take-Two Interactive.",
     close: "Fermer", loading: "Chargement...", empty: "Rien à afficher pour le moment.",
     typing: "Ray réfléchit...",
-    scoreEarned: "points gagnés", correct: "Bonne réponse !", incorrect: "Mauvaise réponse.", teaserTitle: "Bande-annonce officielle", teaserSub: "Trailer publie par Rockstar Games sur YouTube", quizTimeLeft: "Temps restant", quizBestTime: "Meilleur temps", quizYourTime: "Ton temps", quizNewRecord: "Nouveau record !", preorderTitle: "Précommande officielle", preorderSub: "Précommandez GTA 6 directement sur le site officiel de Rockstar Games.",  preorderBtn: "Précommander sur Rockstar Games", trailer2Label: "Bande-annonce 2",
+    scoreEarned: "points gagnés", correct: "Bonne réponse !", incorrect: "Mauvaise réponse.", teaserTitle: "Bande-annonce officielle", teaserSub: "Trailer publie par Rockstar Games sur YouTube", quizTimeLeft: "Temps restant", quizBestTime: "Meilleur temps", quizYourTime: "Ton temps", quizNewRecord: "Nouveau record !", preorderTitle: "Précommande officielle", preorderSub: "Précommandez GTA 6 directement sur le site officiel de Rockstar Games.",  preorderBtn: "Précommander sur Rockstar Games", trailer2Label: "Bande-annonce 2", charactersTitle: "Personnages", charactersSub: "Les deux protagonistes confirmés de GTA 6", charJasonName: "Jason Duval", charJasonBio: "Ancien petit délinquant originaire de Leonida, entraîné par amour et appât du gain dans une vie de braquages aux côtés de Lucia.", charLuciaName: "Lucia Caminos", charLuciaBio: "Tout juste sortie de prison, Lucia veut une vie meilleure pour elle et sa famille. Avec Jason, elle forme l'un des deux protagonistes jouables de GTA 6, dans l'esprit de Bonnie and Clyde.",
     facts: [
       {q:"Date de sortie", a:"19 novembre 2026, sur PS5 et Xbox Series X|S."},
       {q:"Studio", a:"Développé par Rockstar Games, édité par Take-Two Interactive."},
@@ -247,7 +247,7 @@ en: {
     footerText: "Unofficial fan community app. Not affiliated with Rockstar Games or Take-Two Interactive.",
     close: "Close", loading: "Loading...", empty: "Nothing to show yet.",
     typing: "Ray is thinking...",
-    scoreEarned: "points earned", correct: "Correct!", incorrect: "Wrong answer.", teaserTitle: "Official trailer", teaserSub: "Trailer published by Rockstar Games on YouTube", quizTimeLeft: "Time left", quizBestTime: "Best time", quizYourTime: "Your time", quizNewRecord: "New record!", preorderTitle: "Official Pre-order", preorderSub: "Pre-order GTA 6 directly on the official Rockstar Games website.", preorderBtn: "Pre-order on Rockstar Games", trailer2Label: "Trailer 2",
+    scoreEarned: "points earned", correct: "Correct!", incorrect: "Wrong answer.", teaserTitle: "Official trailer", teaserSub: "Trailer published by Rockstar Games on YouTube", quizTimeLeft: "Time left", quizBestTime: "Best time", quizYourTime: "Your time", quizNewRecord: "New record!", preorderTitle: "Official Pre-order", preorderSub: "Pre-order GTA 6 directly on the official Rockstar Games website.", preorderBtn: "Pre-order on Rockstar Games", trailer2Label: "Trailer 2", charactersTitle: "Characters", charactersSub: "The two confirmed protagonists of GTA 6", charJasonName: "Jason Duval", charJasonBio: "A small-time criminal from Leonida, pulled into a life of robbery alongside Lucia by love and the promise of easy money.", charLuciaName: "Lucia Caminos", charLuciaBio: "Fresh out of prison, Lucia wants a better life for herself and her family. Alongside Jason, she is one of the two playable protagonists in GTA 6, in the spirit of Bonnie and Clyde.",
     facts: [
       {q:"Release date", a:"November 19, 2026, on PS5 and Xbox Series X|S."},
       {q:"Studio", a:"Developed by Rockstar Games, published by Take-Two Interactive."},
@@ -940,11 +940,22 @@ function renderHome(){
       <div class="lb-row" style="border-bottom:1px solid var(--line);">
         <div style="flex:1"><strong>${esc(f.q)}</strong><div style="color:var(--text-dim);font-size:13px;margin-top:3px;">${esc(f.a)}</div></div>
       </div>
-    `).join('')}
+      `).join('')}
   </div>`;
+  <div class="panel">
+          <h2>${esc(t('charactersTitle'))}</h2>
+              <p class="sub">${esc(t('charactersSub'))}</p>
+                  <div class="lb-row" style="border-bottom:1px solid var(--line);">
+                        <div style="flex:1"><strong>${esc(t('charJasonName'))}</strong><div style="color:var(--text-dim);font-size:13px;margin-top:3px;">${esc(t('charJasonBio'))}</div></div>
+                            </div>
+                                <div class="lb-row">
+                                      <div style="flex:1"><strong>${esc(t('charLuciaName'))}</strong><div style="color:var(--text-dim);font-size:13px;margin-top:3px;">${esc(t('charLuciaBio'))}</div></div>
+                                          </div>
+                                            </div>
+                                            
 }
 
-function renderRank(){
+  function renderRank(){
   const rows = state.leaderboard.map((u, i) => `
     <div class="lb-row">
       <div class="lb-rank">#${i+1}</div>
