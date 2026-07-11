@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'GET') {
     const { blobs } = await gallery.list();
     const items = await Promise.all(blobs.map((b) => gallery.get(b.key, { type: 'json' })));
-    const sorted = items.filter(Boolean).sort((a, b) => b.ts - a.ts).slice(0, 150);
+    const sorted = items.filter(Boolean).filter((it) => (it.reports || 0) < 3).sort((a, b) => b.ts - a.ts).slice(0, 150);
     return json(200, { items: sorted });
   }
 
@@ -35,7 +35,24 @@ exports.handler = async (event) => {
       return json(200, { likes: item.likes.length, liked: !already });
     }
 
-    if (!imageUrl || !/^https?:\/\//.test(imageUrl)) return json(400, { error: 'URL image invalide' });
+    if (action === 'report') {
+      const item = await gallery.get(id, { type: 'json' });
+      if (!item) return json(404, { error: 'Introuvable' });
+      item.reportedBy = item.reportedBy || [];
+      if (!item.reportedBy.includes(pseudo)) {
+        item.reportedBy.push(pseudo);
+        item.reports = item.reportedBy.length;
+        await gallery.set(id, JSON.stringify(item));
+      }
+      return json(200, { reports: item.reports || 0 });
+    }
+
+    let validImage = false;
+    try {
+      const u = new URL(imageUrl);
+      validImage = u.protocol === 'https:' && /\.(jpe?g|png|gif|webp|avif)$/i.test(u.pathname);
+    } catch {}
+    if (!validImage) return json(400, { error: "L'URL doit être une image en https (jpg, png, gif, webp, avif)" });
     if (!['tenue', 'vehicule'].includes(category)) return json(400, { error: 'Catégorie invalide' });
 
     const itemId = crypto.randomBytes(8).toString('hex');
