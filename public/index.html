@@ -957,7 +957,7 @@ function renderHome(){
   function renderRank(){
   const rows = state.leaderboard.map((u, i) => `
     <div class="lb-row">
-      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
       <div class="lb-name">${esc(u.pseudo)} <span class="lb-country">${esc(u.country)}</span></div>
       <div class="lb-score">${u.score} pts</div>
               <div class="lb-country">${u.bestTime ? '⏱ ' + fmtTime(u.bestTime) : ''}</div>
